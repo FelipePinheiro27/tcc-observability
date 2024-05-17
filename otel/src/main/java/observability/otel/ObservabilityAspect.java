@@ -9,6 +9,7 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import observability.otel.annotation.ObservabilityParam;
 import observability.otel.annotation.Param;
+import observability.otel.service.MetricDataService;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.After;
@@ -23,7 +24,7 @@ import java.lang.management.ManagementFactory;
 @Aspect
 @Component
 public class ObservabilityAspect {
-    private final LongHistogram doWorkHistogram;
+    private final LongHistogram observabilityHistogram;
     private final OperatingSystemMXBean osBean = ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
     private long startTime;
     private double cpuStorageBegan;
@@ -32,16 +33,16 @@ public class ObservabilityAspect {
     @Autowired
     public ObservabilityAspect(OpenTelemetry openTelemetry) {
         Meter meter = openTelemetry.getMeter(OtelApplication.class.getName());
-        doWorkHistogram = meter.histogramBuilder("do-work").ofLongs().build();
+        observabilityHistogram = meter.histogramBuilder("do-observability").ofLongs().build();
     }
 
     @Around("@annotation(observabilityParam)")
     public Object logExecutionTime(ProceedingJoinPoint joinPoint, ObservabilityParam observabilityParam) throws Throwable {
-//        MetricDataService metricDataService = new MetricDataService();
+        MetricDataService metricDataService = new MetricDataService();
         runtime = Runtime.getRuntime();
         runtime.gc();
         Param[] params = observabilityParam.params();
-//        String endpoint = metricDataService.getMethodName(joinPoint);
+        String endpoint = metricDataService.getMethodName(joinPoint);
 
         for (Param param : params) {
             String key = param.key();
@@ -49,7 +50,7 @@ public class ObservabilityAspect {
             Span.current().setAttribute(key, value);
         }
 
-//        Span.current().setAttribute("serviceEndpoint", endpoint);
+        Span.current().setAttribute("serviceEndpoint", endpoint);
 
 //        http://localhost:16686/api/traces?service=custom-annotation
         Object proceed = joinPoint.proceed();
@@ -61,7 +62,6 @@ public class ObservabilityAspect {
     public void logBefore(JoinPoint joinPoint) {
         startTime = System.currentTimeMillis();
         cpuStorageBegan = osBean.getProcessCpuLoad();
-        System.out.println("Starting execution of method: " + joinPoint.getSignature().getName());
     }
 
     @After("@annotation(observability.otel.annotation.ObservabilityParam)")
@@ -79,6 +79,6 @@ public class ObservabilityAspect {
                 .put("serviceTime", serviceTime)
                 .put("memoryUsage", memory).build();
 
-        doWorkHistogram.record(5584, attributes);
+        observabilityHistogram.record(5584, attributes);
     }
 }
