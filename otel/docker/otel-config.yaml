@@ -1,0 +1,24 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+exporters:
+  logging:
+    verbosity: detailed
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+  otlp:
+    endpoint: "http://jaeger:4317"
+    tls:
+      insecure: true      
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp]
+      exporters: [logging, prometheus]
+    traces:
+      receivers: [otlp]
+      exporters: [logging, otlp]
+    logs:
+      receivers: [otlp]
+      exporters: [logging]
