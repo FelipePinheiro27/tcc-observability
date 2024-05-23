@@ -10,6 +10,7 @@ import io.opentelemetry.api.trace.SpanContext;
 import observability.otel.annotation.ObservabilityParam;
 import observability.otel.annotation.Param;
 import observability.otel.service.MetricDataService;
+import observability.otel.service.impl.MetricDataServiceImpl;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.After;
@@ -29,6 +30,8 @@ public class ObservabilityAspect {
     private long startTime;
     private double cpuStorageBegan;
     private Runtime runtime;
+    @Autowired
+    private MetricDataService metricDataService;
 
     @Autowired
     public ObservabilityAspect(OpenTelemetry openTelemetry) {
@@ -38,7 +41,6 @@ public class ObservabilityAspect {
 
     @Around("@annotation(observabilityParam)")
     public Object logExecutionTime(ProceedingJoinPoint joinPoint, ObservabilityParam observabilityParam) throws Throwable {
-        MetricDataService metricDataService = new MetricDataService();
         runtime = Runtime.getRuntime();
         runtime.gc();
         Param[] params = observabilityParam.params();
