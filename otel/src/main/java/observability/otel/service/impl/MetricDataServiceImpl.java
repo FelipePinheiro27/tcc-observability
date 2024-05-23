@@ -50,7 +50,7 @@ public class MetricDataServiceImpl implements MetricDataService {
                             if ("http.route".equals(tag.getString("key"))) {
                                 httpRoute = tag.getString("value");
                             }
-                            if(httpRoute != null && !httpRoute.equals("/api/metrics")){
+                            if(httpRoute != null && !httpRoute.contains("/api/observability")){
                                 if ("http.response.status_code".equals(tag.getString("key"))){
                                     callCount++;
 

@@ -15,20 +15,6 @@ import org.springframework.web.bind.annotation.*;
 public class ObservabilityController {
     @Autowired
     private MetricDataService metricDataService;
-    @GetMapping("/testGet/{name}")
-    @ResponseStatus(HttpStatus.OK)
-    @ObservabilityParam(params = {
-            @Param(key = "cpuStorage", value = 10),
-            @Param(key = "memory", value = 20),
-            @Param(key = "responseTime", value = 55)
-    })
-    public ResponseEntity<String> testGetEndPoint(@PathVariable String name) {
-        if (name == null || name.isEmpty()) {
-            return new ResponseEntity<>("Nome não pode ser vazio", HttpStatus.BAD_REQUEST);
-        }
-
-        return new ResponseEntity<>("ola", HttpStatus.OK);
-    }
 
     @GetMapping("/metrics/errors")
     public String getMetrics() {
