@@ -18,46 +18,14 @@ import java.lang.reflect.Method;
 
 public class MetricDataServiceImpl implements MetricDataService {
 
-    private static final String JAEGER_API_URL = "http://localhost:16686/api/traces?service=custom-annotation";
-
-    public Method getMethod(ProceedingJoinPoint joinPoint) {
-        Method[] methods = joinPoint.getTarget().getClass().getMethods();
-        for (Method method : methods) {
-            if (method.getName().equals(joinPoint.getSignature().getName())) {
-                return method;
-            }
-        }
-        return null;
-    }
-
-    public String getMethodName(ProceedingJoinPoint joinPoint) {
-        Method method = getMethod(joinPoint);
-        if (method != null) {
-            GetMapping getMappingAnnotation = method.getAnnotation(GetMapping.class);
-            RequestMapping requestMappingAnnotation = method.getAnnotation(RequestMapping.class);
-            if (getMappingAnnotation != null) {
-                String[] paths = getMappingAnnotation.value();
-                if (paths.length > 0) {
-                    return paths[0];
-                }
-            } else if (requestMappingAnnotation != null) {
-                String[] paths = requestMappingAnnotation.value();
-                RequestMethod[] methods = requestMappingAnnotation.method();
-                if (paths.length > 0 && methods.length > 0 && methods[0] == RequestMethod.GET) {
-                    return paths[0];
-                }
-            }
-        }
-        return "";
-    }
+    private static final String JAEGER_API_URL = "http://172.17.0.1:16686/api/traces?service=custom-annotation";
 
     public ErrorStatistics getErrorCount() {
         int errorCount = 0;
         int callCount = 0;
 
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            String url = "http://172.17.0.1:16686/api/traces?service=custom-annotation";
-            HttpGet request = new HttpGet(url);
+            HttpGet request = new HttpGet(JAEGER_API_URL);
 
             try (CloseableHttpResponse response = httpClient.execute(request)) {
                 int responseCode = response.getStatusLine().getStatusCode();
@@ -100,5 +68,103 @@ public class MetricDataServiceImpl implements MetricDataService {
             e.printStackTrace();
         }
         return new ErrorStatistics(errorCount, callCount);
+    }
+
+    public ErrorStatistics getErrorCountByServiceName(String serviceName) {
+        int errorCount = 0;
+        int callCount = 0;
+
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            HttpGet request = new HttpGet(JAEGER_API_URL);
+
+            try (CloseableHttpResponse response = httpClient.execute(request)) {
+                int responseCode = response.getStatusLine().getStatusCode();
+                if (responseCode != 200) {
+                    System.out.println("Erro na conexão, código de resposta: " + responseCode);
+                    return new ErrorStatistics(errorCount, callCount);
+                }
+
+                String jsonResponse = EntityUtils.toString(response.getEntity());
+                JSONObject jsonObject = new JSONObject(jsonResponse);
+
+                JSONArray traces = jsonObject.getJSONArray("data");
+                for (int i = 0; i < traces.length(); i++) {
+                    JSONObject trace = traces.getJSONObject(i);
+                    JSONArray spans = trace.getJSONArray("spans");
+                    for (int j = 0; j < spans.length(); j++) {
+                        JSONObject span = spans.getJSONObject(j);
+                        String httpRoute = null;
+                        JSONArray tags = span.getJSONArray("tags");
+                        for (int k = 0; k < tags.length(); k++) {
+                            JSONObject tag = tags.getJSONObject(k);
+                            if ("serviceName".equals(tag.getString("key"))) {
+                                httpRoute = tag.getString("value");
+                            }
+                            if(httpRoute != null && httpRoute.equals(serviceName)){
+                                if ("http.response.status_code".equals(tag.getString("key"))){
+                                    callCount++;
+
+                                    if(tag.getInt("value") >= 400)
+                                        errorCount++;
+                                }
+
+                            }
+
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new ErrorStatistics(errorCount, callCount);
+    }
+
+    public double getRequestCountBySecond() {
+        int requestCountBySecond = 0;
+        long currentTimeMillis = System.currentTimeMillis();
+        long startTimeMillis = currentTimeMillis - (60 * 1000); // 1 minutos atrás
+
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            HttpGet request = new HttpGet(JAEGER_API_URL);
+
+            try (CloseableHttpResponse response = httpClient.execute(request)) {
+                int responseCode = response.getStatusLine().getStatusCode();
+                if (responseCode != 200) {
+                    System.out.println("Erro na conexão, código de resposta: " + responseCode);
+                    return -1;
+                }
+
+                String jsonResponse = EntityUtils.toString(response.getEntity());
+                JSONObject jsonObject = new JSONObject(jsonResponse);
+
+                JSONArray traces = jsonObject.getJSONArray("data");
+                for (int i = 0; i < traces.length(); i++) {
+                    JSONObject trace = traces.getJSONObject(i);
+                    JSONArray spans = trace.getJSONArray("spans");
+                    for (int j = 0; j < spans.length(); j++) {
+                        JSONObject span = spans.getJSONObject(j);
+                        long startTime = span.getLong("startTime") / 1000;
+                        if (startTime >= startTimeMillis && startTime <= currentTimeMillis) {
+                            String httpRoute = null;
+                            JSONArray tags = span.getJSONArray("tags");
+                            for (int k = 0; k < tags.length(); k++) {
+                                JSONObject tag = tags.getJSONObject(k);
+                                if ("http.route".equals(tag.getString("key"))) {
+                                    httpRoute = tag.getString("value");
+                                }
+                            }
+                            if (httpRoute != null && !httpRoute.equals("/api/metrics")) {
+                                requestCountBySecond++;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return (double) requestCountBySecond / 60;
     }
 }

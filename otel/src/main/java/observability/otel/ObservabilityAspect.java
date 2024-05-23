@@ -9,8 +9,7 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import observability.otel.annotation.ObservabilityParam;
 import observability.otel.annotation.Param;
-import observability.otel.service.MetricDataService;
-import observability.otel.service.impl.MetricDataServiceImpl;
+import observability.otel.service.SpanAttributesService;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.After;
@@ -21,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
 
 @Aspect
 @Component
@@ -31,7 +31,7 @@ public class ObservabilityAspect {
     private double cpuStorageBegan;
     private Runtime runtime;
     @Autowired
-    private MetricDataService metricDataService;
+    private SpanAttributesService spanAttributesService;
 
     @Autowired
     public ObservabilityAspect(OpenTelemetry openTelemetry) {
@@ -44,7 +44,7 @@ public class ObservabilityAspect {
         runtime = Runtime.getRuntime();
         runtime.gc();
         Param[] params = observabilityParam.params();
-        String endpoint = metricDataService.getMethodName(joinPoint);
+        Method methodName = spanAttributesService.getMethod(joinPoint);
 
         for (Param param : params) {
             String key = param.key();
@@ -52,9 +52,8 @@ public class ObservabilityAspect {
             Span.current().setAttribute(key, value);
         }
 
-        Span.current().setAttribute("serviceEndpoint", endpoint);
+        Span.current().setAttribute("serviceName", methodName.getName());
 
-//        http://localhost:16686/api/traces?service=custom-annotation
         Object proceed = joinPoint.proceed();
 
         return proceed;
@@ -70,7 +69,7 @@ public class ObservabilityAspect {
     public void logAfter(JoinPoint joinPoint) {
         SpanContext spanContext = Span.current().getSpanContext();
         long endTime = System.currentTimeMillis();
-        double cpuStorage = osBean.getProcessCpuLoad() - cpuStorageBegan;
+        double cpuStorage = cpuStorageBegan - osBean.getProcessCpuLoad();
         long serviceTime = endTime - startTime;
         long memory = runtime != null ? runtime.totalMemory() - runtime.freeMemory() : 0;
 
