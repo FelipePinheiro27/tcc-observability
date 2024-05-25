@@ -1,13 +1,9 @@
 package observability.otel.controller;
 
 import observability.otel.ErrorStatistics;
-import observability.otel.annotation.ObservabilityParam;
-import observability.otel.annotation.Param;
 import observability.otel.service.MetricDataService;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

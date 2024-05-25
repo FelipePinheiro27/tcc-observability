@@ -48,7 +48,7 @@ public class ObservabilityAspect {
 
         for (Param param : params) {
             String key = param.key();
-            int value = param.value();
+            String value = param.value();
             Span.current().setAttribute(key, value);
         }
 
@@ -69,7 +69,7 @@ public class ObservabilityAspect {
     public void logAfter(JoinPoint joinPoint) {
         SpanContext spanContext = Span.current().getSpanContext();
         long endTime = System.currentTimeMillis();
-        double cpuStorage = cpuStorageBegan - osBean.getProcessCpuLoad();
+        double cpuStorage = osBean.getProcessCpuLoad() - cpuStorageBegan;
         long serviceTime = endTime - startTime;
         long memory = runtime != null ? runtime.totalMemory() - runtime.freeMemory() : 0;
 
