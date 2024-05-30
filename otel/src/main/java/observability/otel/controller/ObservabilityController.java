@@ -1,5 +1,6 @@
 package observability.otel.controller;
 
+import observability.otel.AllMetrics;
 import observability.otel.ErrorStatistics;
 import observability.otel.Metric;
 import observability.otel.service.MetricDataService;
@@ -7,8 +8,7 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Collection;
-import java.util.Map;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/observability")
@@ -43,9 +43,10 @@ public class ObservabilityController {
     }
 
     @GetMapping("all")
-    public Collection<Metric> getAllServices() {
-        Map<String, Metric> metrics = metricDataService.getAllServices();
+    public List<AllMetrics> getAllServices() {
+        List<AllMetrics> metrics = metricDataService.getAllMetrics();
 
-        return metrics.values();
+        return metrics;
+
     }
 }

@@ -84,13 +84,5 @@ public class Controller {
             this.data = data;
         }
 
-        // Getters e setters, se necessário
-    }
-
-    @GetMapping("/service/{serviceName}")
-    public AllMetrics getMetricsByServiceName(@PathVariable String serviceName) {
-        AllMetrics metrics = metricDataService.getMetricsByServiceName(serviceName);
-
-        return metrics;
     }
 }

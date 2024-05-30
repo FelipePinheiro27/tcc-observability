@@ -82,7 +82,7 @@ public class SpecificMetrics {
 
     public void setCpuStorageOverflows(int cpuStorageOverflows) { this.cpuStorageOverflows = cpuStorageOverflows; }
 
-    public int getMemoryUsageOverflows() { return memoryUsageOverflows;}
+    public int getMemoryUsageOverflows() { return memoryUsageOverflows; }
 
     public void setMemoryUsageOverflows(int memoryUsageOverflows) { this.memoryUsageOverflows = memoryUsageOverflows; }
     public int getAllOverflows() { return allOverflows; }

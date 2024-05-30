@@ -7,17 +7,14 @@ import observability.otel.Metric;
 import org.aspectj.lang.ProceedingJoinPoint;
 
 import java.lang.reflect.Method;
+import java.util.List;
 import java.util.Map;
 
 public interface MetricDataService {
     public ErrorStatistics getErrorCount();
 
-    public AllMetrics getMetricsByServiceName(String serviceName);
-
-//    public Map<String, GeneralMetrics[]> getConnectWithPrometheus();
+    public List<AllMetrics> getAllMetrics();
 
     public double getRequestCountBySecond();
-
-    public Map<String, Metric> getAllServices();
 
 }
