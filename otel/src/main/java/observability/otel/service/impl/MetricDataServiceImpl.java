@@ -1,7 +1,6 @@
 package observability.otel.service.impl;
 
-import observability.otel.ErrorStatistics;
-import observability.otel.GeneralMetrics;
+import observability.otel.*;
 import observability.otel.service.MetricDataService;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -11,6 +10,9 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import javax.xml.transform.Source;
+import java.math.BigDecimal;
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -209,27 +211,36 @@ public class MetricDataServiceImpl implements MetricDataService {
 
         return new JSONArray();
     }
-    public Map<String, GeneralMetrics[]> getConnectWithPrometheus() {
+
+    public JSONArray getPrometheusMetric() {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             HttpGet request = new HttpGet(PROMETHEUS_API_URL);
             try (CloseableHttpResponse response = httpClient.execute(request)) {
                 String jsonResponse = EntityUtils.toString(response.getEntity());
                 JSONObject jsonObject = new JSONObject(jsonResponse);
                 JSONArray resultArray = jsonObject.getJSONObject("data").getJSONArray("result");
-                Map<String, Object> hashMap = parseMetricDataToHashMap(resultArray);
-                JSONArray traces = getTraces();
-                return fillServiceMetrics(hashMap, traces);
+
+                return resultArray;
             }
         }
         catch (Exception e) {
             System.err.println("Error: " + e);
         }
-        return new HashMap<>();
+
+        return new JSONArray();
     }
 
-    public Map<String, GeneralMetrics[]> fillServiceMetrics(Map<String, Object> customPrometheusMetricsMap, JSONArray jaegerTraces) {
-        Map<String, List<GeneralMetrics>> generalMetrics = new HashMap<>(); // Initialize the map
-        System.out.println("customPrometheusMetricsMap: " + customPrometheusMetricsMap);
+    public AllMetrics fillServiceMetric(Map<String, Object> customPrometheusMetricsMap, JSONArray jaegerTraces, String serviceName) {
+        double serviceTimeTotal = 0, maxServiceTime = 0, minServiceTime = 0,
+                maxCpuStorage = 0, minCpuStorage = 0, maxMemoryUsage = 0, minMemoryUsage = 0;
+        long currentTimeMillis = System.currentTimeMillis();
+        long startTimeMillis = currentTimeMillis - (5 * 60 * 1000); // 5 minutos atrás
+        int qttRequests = 0, qttErrors = 0, requestCountBySecond = 0, allOverflows = 0,
+            responseTimeOverflows = 0, cpuStorageOverflows = 0, memoryUsageOverflows = 0;
+        String maxServiceTimeSpanId = "", minServiceTimeSpanId = "", maxCpuStorageSpanId= "",
+                minCpuStorageSpanId = "", maxMemoryUsageSpanId = "", minMemoryUsageSpanId = "";
+        GeneralMetrics generalMetrics = new GeneralMetrics();
+        SpecificMetrics specificMetrics = new SpecificMetrics();
 
         for (int i = 0; i < jaegerTraces.length(); i++) {
             JSONObject trace = jaegerTraces.getJSONObject(i);
@@ -237,67 +248,173 @@ public class MetricDataServiceImpl implements MetricDataService {
             for (int j = 0; j < spans.length(); j++) {
                 JSONObject span = spans.getJSONObject(j);
                 String spanID = span.getString("spanID");
-                System.out.println("spanID: " + spanID);
                 JSONArray tags = span.getJSONArray("tags");
                 Map<String, String> prometheusMetrics;
-                GeneralMetrics currentMetrics = new GeneralMetrics();
-                if (customPrometheusMetricsMap.containsKey(spanID)) {
-                    prometheusMetrics = (Map<String, String>) customPrometheusMetricsMap.get(spanID);
-                    String serviceName = null;
-                    currentMetrics.setSpanId(spanID);
-                    for (int k = 0; k < tags.length(); k++) {
-                        JSONObject tag = tags.getJSONObject(k);
-                        switch (tag.getString("key")) {
-                            case "serviceName":
-                                serviceName = tag.getString("value");
-                                currentMetrics.setServiceName(serviceName);
-                                break;
-                            case "http.route":
-                                String serviceEndpoint = tag.getString("value");
-                                currentMetrics.setServiceEndpoint(serviceEndpoint);
-                                break;
-                            case "http.response.status_code":
-                                int statusCode = tag.getInt("value");
-                                currentMetrics.setStatusCode(statusCode);
-                                break;
-                            case "cpuStorage":
-                                String cpuStorage = tag.getString("value");
-                                currentMetrics.setExpectedCpuStorage(cpuStorage);
-                                String cpuStorageValue = prometheusMetrics.get("cpuStorage");
-                                currentMetrics.setCpuStorageValue(cpuStorageValue);
-                                break;
-                            case "responseTime":
-                                String serviceTime = tag.getString("value");
-                                currentMetrics.setExpectedServiceTime(serviceTime);
-                                String serviceTimeValue = prometheusMetrics.get("serviceTime");
-                                currentMetrics.setServiceTimeValue(serviceTimeValue);
-                                break;
-                            case "memory":
-                                String memory = tag.getString("value");
-                                currentMetrics.setExpectedMemoryUsage(memory);
-                                String memoryValue = prometheusMetrics.get("memoryUsage");
-                                currentMetrics.setMemoryUsageValue(memoryValue);
-                                break;
-                        }
+                long startTime = span.getLong("startTime") / 1000;
+                boolean isLastFiveMin = startTime >= startTimeMillis && startTime <= currentTimeMillis;
+
+                String currentServiceName = null;
+
+                for (int k = 0; k < tags.length(); k++) {
+                    JSONObject tag = tags.getJSONObject(k);
+                    if ("serviceName".equals(tag.getString("key"))) {
+                        currentServiceName = tag.getString("value");
+                        break;
                     }
-                    if (serviceName != null) {
-                        generalMetrics.computeIfAbsent(serviceName, k -> new ArrayList<>()).add(currentMetrics);
-                        System.out.println("MINHAS MÉTRICAS: " + generalMetrics);
+                }
+
+                if (serviceName.equals(currentServiceName) && customPrometheusMetricsMap.containsKey(spanID)) {
+                    if(isLastFiveMin)
+                        requestCountBySecond++;
+
+                    prometheusMetrics = (Map<String, String>) customPrometheusMetricsMap.get(spanID);
+                    if(prometheusMetrics != null){
+                        for (int k = 0; k < tags.length(); k++) {
+                            JSONObject tag = tags.getJSONObject(k);
+                            switch (tag.getString("key")) {
+                                case "http.response.status_code":
+                                    int statusCode = tag.getInt("value");
+                                    qttRequests++;
+                                    if (statusCode >= 400) {
+                                        qttErrors++;
+                                    }
+                                    break;
+                                case "responseTime":
+                                    String serviceTimeValue = prometheusMetrics.get("serviceTime");
+                                    double serviceTimeParsed = Double.parseDouble(serviceTimeValue);
+                                    double serviceTimeSpanParsed = Double.parseDouble(tag.getString("value"));
+                                    if(serviceTimeParsed > serviceTimeSpanParsed){
+                                        allOverflows++;
+                                        responseTimeOverflows++;
+                                    }
+                                    serviceTimeTotal += serviceTimeParsed;
+                                    if (serviceTimeParsed > maxServiceTime) {
+                                        maxServiceTime = serviceTimeParsed;
+                                        maxServiceTimeSpanId = spanID;
+                                    }
+                                    if (serviceTimeParsed < minServiceTime) {
+                                        minServiceTime = serviceTimeParsed;
+                                        minServiceTimeSpanId = spanID;
+                                    }
+                                    break;
+                                case "cpuStorage":
+                                    String cpuStorageValue = prometheusMetrics.get("cpuStorage");
+                                    double cpuStorageParsed = Double.parseDouble(cpuStorageValue);
+                                    double cpuStorageSpanParsed = Double.parseDouble(tag.getString("value"));
+                                    if(cpuStorageParsed > cpuStorageSpanParsed){
+                                        allOverflows++;
+                                        cpuStorageOverflows++;
+                                    }
+                                    if (cpuStorageParsed > maxCpuStorage) {
+                                        maxCpuStorage = cpuStorageParsed;
+                                        maxCpuStorageSpanId = spanID;
+                                    }
+                                    if (cpuStorageParsed < minCpuStorage) {
+                                        minCpuStorage = cpuStorageParsed;
+                                        minCpuStorageSpanId = spanID;
+                                    }
+                                    break;
+                                case "memory":
+                                    String memoryUsageValue = prometheusMetrics.get("memoryUsage");
+                                    System.out.println("MEMORY USAGE BEFORE: " + memoryUsageValue);
+                                    double memoryUsageParsed = Double.parseDouble(memoryUsageValue);
+                                    System.out.println("MEMORY USAGE AFTER: " + memoryUsageValue);
+                                    double memoryUsageSpanParsed = Double.parseDouble(tag.getString("value"));
+                                    System.out.println("MEMORY USAGE SPAN: " + memoryUsageValue);
+                                    if(memoryUsageParsed > memoryUsageSpanParsed){
+                                        allOverflows++;
+                                        memoryUsageOverflows++;
+                                    }
+                                    if (memoryUsageParsed > maxMemoryUsage) {
+                                        maxMemoryUsage = memoryUsageParsed;
+                                        maxMemoryUsageSpanId = spanID;
+                                    }
+                                    if (memoryUsageParsed < minMemoryUsage) {
+                                        minMemoryUsage = memoryUsageParsed;
+                                        minMemoryUsageSpanId = spanID;
+                                    }
+                                    break;
+                            }
+                        }
                     }
                 }
             }
         }
 
-        // Convert List<GeneralMetrics> to GeneralMetrics[]
-        Map<String, GeneralMetrics[]> generalMetricsArray = new HashMap<>();
-        for (Map.Entry<String, List<GeneralMetrics>> entry : generalMetrics.entrySet()) {
-            List<GeneralMetrics> metricsList = entry.getValue();
-            GeneralMetrics[] metricsArray = new GeneralMetrics[metricsList.size()];
-            generalMetricsArray.put(entry.getKey(), metricsList.toArray(metricsArray));
+        System.out.println("requestCountBySecond: " + requestCountBySecond + " por 60: " + requestCountBySecond / 60);
+
+        generalMetrics.setErrorsQtt(qttErrors);
+        generalMetrics.setRequestsQtt(qttRequests);
+        generalMetrics.setRequestsBySecond((double) requestCountBySecond / 60);
+
+        specificMetrics.setMedianReponseTime(serviceTimeTotal / (qttRequests + qttErrors));
+        specificMetrics.setMaxResponseTime(maxServiceTime);
+        specificMetrics.setMinResponseTime(minServiceTime);
+        specificMetrics.setSpanMaxResponseTime(maxServiceTimeSpanId);
+        specificMetrics.setSpanMinResponseTime(minServiceTimeSpanId);
+
+        specificMetrics.setMaxCpuStorage(maxCpuStorage);
+        specificMetrics.setMinCpuStorage(minCpuStorage);
+        specificMetrics.setSpanMaxCpuStorage(maxCpuStorageSpanId);
+        specificMetrics.setSpanMinCpuStorage(minCpuStorageSpanId);
+
+        specificMetrics.setMaxMemoryUsage(maxMemoryUsage);
+        specificMetrics.setMinMemoryUsage(minMemoryUsage);
+        specificMetrics.setSpanMaxMemoryUsage(maxMemoryUsageSpanId);
+        specificMetrics.setSpanMinMemoryUsage(minMemoryUsageSpanId);
+
+        specificMetrics.setResponseTimeOverflows(responseTimeOverflows);
+        specificMetrics.setCpuStorageOverflows(cpuStorageOverflows);
+        specificMetrics.setMemoryUsageOverflows(memoryUsageOverflows);
+        specificMetrics.setAllOverflows(allOverflows);
+
+        return new AllMetrics(generalMetrics, specificMetrics);
+    }
+
+    public AllMetrics getMetricsByServiceName(String serviceName) {
+        JSONArray traces = getTraces();
+        JSONArray prometheusMetric = getPrometheusMetric();
+        Map<String, Object> prometheusMetrichashMap = parseMetricDataToHashMap(prometheusMetric);
+        return fillServiceMetric(prometheusMetrichashMap, traces, serviceName);
+    }
+
+    public Map<String, Metric> getAllServices() {
+        JSONArray traces = getTraces();
+        Map<String, Metric> metrics = new HashMap<>();
+
+        for (int i = 0; i < traces.length(); i++) {
+            JSONObject trace = traces.getJSONObject(i);
+            JSONArray spans = trace.getJSONArray("spans");
+            for (int j = 0; j < spans.length(); j++) {
+                JSONObject span = spans.getJSONObject(j);
+                JSONArray tags = span.getJSONArray("tags");
+                Metric currentMetrics = new Metric();
+                String serviceName = null;
+                for (int k = 0; k < tags.length(); k++) {
+                    JSONObject tag = tags.getJSONObject(k);
+                    switch (tag.getString("key")) {
+                        case "serviceName":
+                            serviceName = tag.getString("value");
+                            currentMetrics.setServiceName(serviceName);
+                            break;
+                        case "http.route":
+                            String serviceEndpoint = tag.getString("value");
+                            currentMetrics.setEndpointName(serviceEndpoint);
+                            break;
+                    }
+                }
+                if (serviceName != null) {
+                    if (metrics.containsKey(serviceName)) {
+                        // Combinar métricas existentes com as novas
+                        Metric existingMetric = metrics.get(serviceName);
+                        existingMetric.combine(currentMetrics); // Método que combina métricas
+                    } else {
+                        metrics.put(serviceName, currentMetrics);
+                    }
+                }
+            }
         }
 
-        System.out.println("generalMetricsArray: " + generalMetricsArray);
-
-        return generalMetricsArray;
+        return metrics;
     }
 }

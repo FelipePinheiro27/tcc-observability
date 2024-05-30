@@ -20,6 +20,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
+import java.lang.management.MemoryUsage;
 import java.lang.reflect.Method;
 
 @Aspect
@@ -27,6 +29,9 @@ import java.lang.reflect.Method;
 public class ObservabilityAspect {
     private final LongHistogram observabilityHistogram;
     private final OperatingSystemMXBean osBean = ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
+    MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
+    MemoryUsage heapMemoryUsage = memoryMXBean.getHeapMemoryUsage();
+
     private long startTime;
     private double cpuStorageBegan;
     private Runtime runtime;
@@ -48,7 +53,7 @@ public class ObservabilityAspect {
 
         for (Param param : params) {
             String key = param.key();
-            String value = param.value();
+            String value = String.valueOf(param.value());
             Span.current().setAttribute(key, value);
         }
 
@@ -61,6 +66,8 @@ public class ObservabilityAspect {
 
     @Before("@annotation(observability.otel.annotation.ObservabilityParam)")
     public void logBefore(JoinPoint joinPoint) {
+        System.out.println("Heap Memory Usage:");
+        System.out.println("Init: " + heapMemoryUsage.getInit() / 1048576.0 + " MB");
         startTime = System.currentTimeMillis();
         cpuStorageBegan = osBean.getProcessCpuLoad();
     }
@@ -72,13 +79,14 @@ public class ObservabilityAspect {
         double cpuStorage = osBean.getProcessCpuLoad() - cpuStorageBegan;
         long serviceTime = endTime - startTime;
         long memory = runtime != null ? runtime.totalMemory() - runtime.freeMemory() : 0;
+        System.out.println("Used: " + heapMemoryUsage.getUsed() / 1048576.0 + "MB");
 
         Attributes attributes = Attributes.builder()
                 .put("span", spanContext.getSpanId())
                 .put("trace", spanContext.getTraceId())
                 .put("cpuStorage", cpuStorage)
                 .put("serviceTime", serviceTime)
-                .put("memoryUsage", memory).build();
+                .put("memoryUsage", memory / 1048576.0).build();
 
         observabilityHistogram.record(5584, attributes);
     }

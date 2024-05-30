@@ -1,10 +1,14 @@
 package observability.otel.controller;
 
 import observability.otel.ErrorStatistics;
+import observability.otel.Metric;
 import observability.otel.service.MetricDataService;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Collection;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/observability")
@@ -21,12 +25,12 @@ public class ObservabilityController {
         return jsonResponse.toString();
     }
 
-    @GetMapping("/metrics/errors/service/{serviceName}")
+    @GetMapping("/service/{serviceName}")
     public String getMetricsByServiceName(@PathVariable String serviceName) {
-        ErrorStatistics errorStatistics = metricDataService.getErrorCountByServiceName(serviceName);
+//        ErrorStatistics errorStatistics = metricDataService.getErrorCountByServiceName(serviceName);
         JSONObject jsonResponse = new JSONObject();
-        jsonResponse.put("specific fetchs", errorStatistics.getTotalCalls());
-        jsonResponse.put("specific errors", errorStatistics.getTotalErrors());
+//        jsonResponse.put("specific fetchs", errorStatistics.getTotalCalls());
+//        jsonResponse.put("specific errors", errorStatistics.getTotalErrors());
         return jsonResponse.toString();
     }
 
@@ -36,5 +40,12 @@ public class ObservabilityController {
         JSONObject jsonResponse = new JSONObject();
         jsonResponse.put("requests by second: ", value);
         return jsonResponse.toString();
+    }
+
+    @GetMapping("all")
+    public Collection<Metric> getAllServices() {
+        Map<String, Metric> metrics = metricDataService.getAllServices();
+
+        return metrics.values();
     }
 }
