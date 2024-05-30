@@ -22,152 +22,6 @@ public class MetricDataServiceImpl implements MetricDataService {
     private static final String JAEGER_API_URL = "http://172.17.0.1:16686/api/traces?service=custom-annotation";
     private static final String PROMETHEUS_API_URL = "http://172.17.0.1:9090/api/v1/query?query=do_observability_count";
 
-    public ErrorStatistics getErrorCount() {
-        int errorCount = 0;
-        int callCount = 0;
-
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpGet request = new HttpGet(JAEGER_API_URL);
-
-            try (CloseableHttpResponse response = httpClient.execute(request)) {
-                int responseCode = response.getStatusLine().getStatusCode();
-                if (responseCode != 200) {
-                    System.out.println("Erro na conexão, código de resposta: " + responseCode);
-                    return new ErrorStatistics(errorCount, callCount);
-                }
-
-                String jsonResponse = EntityUtils.toString(response.getEntity());
-                JSONObject jsonObject = new JSONObject(jsonResponse);
-
-                JSONArray traces = jsonObject.getJSONArray("data");
-                for (int i = 0; i < traces.length(); i++) {
-                    JSONObject trace = traces.getJSONObject(i);
-                    JSONArray spans = trace.getJSONArray("spans");
-                    for (int j = 0; j < spans.length(); j++) {
-                        JSONObject span = spans.getJSONObject(j);
-                        String httpRoute = null;
-                        JSONArray tags = span.getJSONArray("tags");
-                        for (int k = 0; k < tags.length(); k++) {
-                            JSONObject tag = tags.getJSONObject(k);
-                            if ("http.route".equals(tag.getString("key"))) {
-                                httpRoute = tag.getString("value");
-                            }
-                            if(httpRoute != null && !httpRoute.contains("/api/observability")){
-                                if ("http.response.status_code".equals(tag.getString("key"))){
-                                    callCount++;
-
-                                    if(tag.getInt("value") >= 400)
-                                        errorCount++;
-                                }
-
-                            }
-
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return new ErrorStatistics(errorCount, callCount);
-    }
-
-    public ErrorStatistics getErrorCountByServiceName(String serviceName) {
-        int errorCount = 0;
-        int callCount = 0;
-
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpGet request = new HttpGet(JAEGER_API_URL);
-
-            try (CloseableHttpResponse response = httpClient.execute(request)) {
-                int responseCode = response.getStatusLine().getStatusCode();
-                if (responseCode != 200) {
-                    System.out.println("Erro na conexão, código de resposta: " + responseCode);
-                    return new ErrorStatistics(errorCount, callCount);
-                }
-
-                String jsonResponse = EntityUtils.toString(response.getEntity());
-                JSONObject jsonObject = new JSONObject(jsonResponse);
-
-                JSONArray traces = jsonObject.getJSONArray("data");
-                for (int i = 0; i < traces.length(); i++) {
-                    JSONObject trace = traces.getJSONObject(i);
-                    JSONArray spans = trace.getJSONArray("spans");
-                    for (int j = 0; j < spans.length(); j++) {
-                        JSONObject span = spans.getJSONObject(j);
-                        String httpRoute = null;
-                        JSONArray tags = span.getJSONArray("tags");
-                        for (int k = 0; k < tags.length(); k++) {
-                            JSONObject tag = tags.getJSONObject(k);
-                            if ("serviceName".equals(tag.getString("key"))) {
-                                httpRoute = tag.getString("value");
-                            }
-                            if(httpRoute != null && httpRoute.equals(serviceName)){
-                                if ("http.response.status_code".equals(tag.getString("key"))){
-                                    callCount++;
-
-                                    if(tag.getInt("value") >= 400)
-                                        errorCount++;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Error: " + e);
-        }
-        return new ErrorStatistics(errorCount, callCount);
-    }
-
-    public double getRequestCountBySecond() {
-        int requestCountBySecond = 0;
-        long currentTimeMillis = System.currentTimeMillis();
-        long startTimeMillis = currentTimeMillis - (60 * 1000); // 1 minutos atrás
-
-        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-            HttpGet request = new HttpGet(JAEGER_API_URL);
-
-            try (CloseableHttpResponse response = httpClient.execute(request)) {
-                int responseCode = response.getStatusLine().getStatusCode();
-                if (responseCode != 200) {
-                    System.out.println("Erro na conexão, código de resposta: " + responseCode);
-                    return -1;
-                }
-
-                String jsonResponse = EntityUtils.toString(response.getEntity());
-                JSONObject jsonObject = new JSONObject(jsonResponse);
-
-                JSONArray traces = jsonObject.getJSONArray("data");
-                for (int i = 0; i < traces.length(); i++) {
-                    JSONObject trace = traces.getJSONObject(i);
-                    JSONArray spans = trace.getJSONArray("spans");
-                    for (int j = 0; j < spans.length(); j++) {
-                        JSONObject span = spans.getJSONObject(j);
-                        long startTime = span.getLong("startTime") / 1000;
-                        if (startTime >= startTimeMillis && startTime <= currentTimeMillis) {
-                            String httpRoute = null;
-                            JSONArray tags = span.getJSONArray("tags");
-                            for (int k = 0; k < tags.length(); k++) {
-                                JSONObject tag = tags.getJSONObject(k);
-                                if ("http.route".equals(tag.getString("key"))) {
-                                    httpRoute = tag.getString("value");
-                                }
-                            }
-                            if (httpRoute != null && !httpRoute.equals("/api/metrics")) {
-                                requestCountBySecond++;
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("Error: " + e);
-        }
-
-        return (double) requestCountBySecond / 60;
-    }
-
     public Map<String, Object> parseMetricDataToHashMap(JSONArray jsonArray) {
         Map<String, Object> hashMap = new HashMap<>();
 
@@ -367,6 +221,46 @@ public class MetricDataServiceImpl implements MetricDataService {
         return allMetricsList;
     }
 
+    public GeneralMetrics FillSystemMetrics(JSONArray jaegerTraces) {
+        long currentTimeMillis = System.currentTimeMillis();
+        long startTimeMillis = currentTimeMillis - (5 * 60 * 1000);
+        int requestsFiveMinutes = 0, totalRequests = 0, totalErrors = 0;
+
+        for (int i = 0; i < jaegerTraces.length(); i++) {
+            JSONObject trace = jaegerTraces.getJSONObject(i);
+            JSONArray spans = trace.getJSONArray("spans");
+            for (int j = 0; j < spans.length(); j++) {
+                JSONObject span = spans.getJSONObject(j);
+                JSONArray tags = span.getJSONArray("tags");
+                long startTime = span.getLong("startTime") / 1000;
+                boolean isLastFiveMin = startTime >= startTimeMillis && startTime <= currentTimeMillis;
+                String httpRoute = "";
+                int statusCode = 0;
+
+                for (int k = 0; k < tags.length(); k++) {
+                    JSONObject tag = tags.getJSONObject(k);
+                    switch (tag.getString("key")) {
+                        case "http.route":
+                            httpRoute = tag.getString("value");
+                            break;
+                        case "http.response.status_code":
+                            statusCode = tag.getInt("value");
+                    }
+                }
+
+                if(httpRoute != "" && !httpRoute.contains("api/observability") && !httpRoute.contains("api/traces")) {
+                    System.out.println("MINHA ROTA: " + httpRoute);
+                    totalRequests++;
+                    if(statusCode >= 400)
+                        totalErrors++;
+                    if(isLastFiveMin)
+                        requestsFiveMinutes++;
+                 }
+            }
+        }
+
+        return new GeneralMetrics(totalRequests, totalErrors, (double) requestsFiveMinutes / 60);
+    }
 
     public List<AllMetrics> getAllMetrics() {
         JSONArray traces = getTraces();
@@ -374,5 +268,10 @@ public class MetricDataServiceImpl implements MetricDataService {
         Map<String, Object> prometheusMetrichashMap = parseMetricDataToHashMap(prometheusMetric);
 
         return fillServiceMetric(prometheusMetrichashMap, traces);
+    }
+
+    public GeneralMetrics getSystemMetrics() {
+        JSONArray traces = getTraces();
+        return FillSystemMetrics(traces);
     }
 }

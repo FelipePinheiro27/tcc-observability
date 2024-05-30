@@ -19,25 +19,4 @@ public class SpanAttributesServiceImpl implements SpanAttributesService {
         }
         return null;
     }
-
-    public String getEndpointName(ProceedingJoinPoint joinPoint) {
-        Method method = getMethod(joinPoint);
-        if (method != null) {
-            GetMapping getMappingAnnotation = method.getAnnotation(GetMapping.class);
-            RequestMapping requestMappingAnnotation = method.getAnnotation(RequestMapping.class);
-            if (getMappingAnnotation != null) {
-                String[] paths = getMappingAnnotation.value();
-                if (paths.length > 0) {
-                    return paths[0];
-                }
-            } else if (requestMappingAnnotation != null) {
-                String[] paths = requestMappingAnnotation.value();
-                RequestMethod[] methods = requestMappingAnnotation.method();
-                if (paths.length > 0 && methods.length > 0 && methods[0] == RequestMethod.GET) {
-                    return paths[0];
-                }
-            }
-        }
-        return "";
-    }
 }
