@@ -85,4 +85,21 @@ public class Controller {
         }
 
     }
+
+    @GetMapping("/transfer")
+    @ObservabilityParam(params = {
+            @Param(key = "cpuStorage", value = "10"),
+            @Param(key = "memory", value = "20"),
+            @Param(key = "responseTime", value = "55")
+    })    public String transfer(@RequestParam(value = "size", defaultValue = "1024") int size) {
+        return generateData(size);
+    }
+
+    private String generateData(int size) {
+        StringBuilder sb = new StringBuilder(size);
+        for (int i = 0; i < size; i++) {
+            sb.append('a');
+        }
+        return sb.toString();
+    }
 }
