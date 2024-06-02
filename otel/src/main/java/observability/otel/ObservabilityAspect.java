@@ -1,10 +1,12 @@
 package observability.otel;
 
-import com.sun.management.OperatingSystemMXBean;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongGaugeBuilder;
 import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
 import observability.otel.annotation.ObservabilityParam;
@@ -19,40 +21,47 @@ import org.aspectj.lang.annotation.Before;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
-import java.lang.management.MemoryUsage;
 import java.lang.reflect.Method;
-import java.util.function.ToDoubleFunction;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Aspect
 @Component
 public class ObservabilityAspect {
     private final LongCounter requestCounter;
-    private final LongCounter dataTransferCounter;
-    private final LongCounter memoryUsageCounter;
+    private final Meter meter;
+    private final AtomicLong lastMemoryUsage = new AtomicLong();
 
     @Autowired
     private SpanAttributesService spanAttributesService;
 
     @Autowired
     public ObservabilityAspect(OpenTelemetry openTelemetry) {
-        Meter meter = openTelemetry.getMeter(OtelApplication.class.getName());
+        try {
+            this.meter = openTelemetry.getMeter(OtelApplication.class.getName());
 
-        requestCounter = meter.counterBuilder("app_requests_total")
-                .setDescription("Total number of requests")
-                .setUnit("requests")
-                .build();
+            this.requestCounter = meter.counterBuilder("observability_requests_total")
+                    .setDescription("Total number of requests")
+                    .setUnit("requests")
+                    .build();
 
-        dataTransferCounter = meter.counterBuilder("app_data_transferred_bytes_total")
-                .setDescription("Total bytes transferred")
-                .setUnit("bytes")
-                .build();
-
-        memoryUsageCounter = meter.counterBuilder("app_memory_usage_bytes")
-                .setDescription("Memory usage of the application")
-                .setUnit("bytes")
-                .build();
+            this.meter.gaugeBuilder("observability_memory_usage")
+                    .ofLongs()
+                    .setDescription("Current JVM memory usage")
+                    .setUnit("bytes")
+                    .buildWithCallback(measurement -> {
+                        // Usar o valor da última medição de uso de memória com seus atributos
+                        long memoryUsage = lastMemoryUsage.get();
+                        Attributes attributes = Attributes.builder()
+                                .put(AttributeKey.stringKey("method"), "last_method")
+                                .put(AttributeKey.stringKey("spanId"), "last_span_id")
+                                .put(AttributeKey.stringKey("type"), "heap")
+                                .build();
+                        measurement.record(memoryUsage, attributes);
+                    });
+        } catch (Exception e) {
+            System.err.println("Erro ao inicializar ObservabilityAspect: " + e.getMessage());
+            throw e;
+        }
     }
 
     @Around("@annotation(observabilityParam)")
@@ -63,15 +72,29 @@ public class ObservabilityAspect {
         for (Param param : params) {
             String key = param.key();
             String value = String.valueOf(param.value());
-            Span.current().setAttribute(key, value);
+            Span.current().setAttribute(AttributeKey.stringKey(key), value);
         }
 
         Span.current().setAttribute("serviceName", methodName.getName());
 
         Object proceed = joinPoint.proceed();
 
-        // Increment the request counter
-        requestCounter.add(1, Attributes.builder().put("method", methodName.getName()).build());
+        requestCounter.add(1, Attributes.builder().put(AttributeKey.stringKey("method"), methodName.getName()).build());
+        SpanContext spanContext = Span.current().getSpanContext();
+
+        long memoryUsage = getMemoryUsage();
+        lastMemoryUsage.set(memoryUsage);
+
+        Attributes attributes = Attributes.builder()
+                .put(AttributeKey.stringKey("method"), methodName.getName())
+                .put(AttributeKey.stringKey("spanId"), spanContext.getSpanId())
+                .put(AttributeKey.stringKey("type"), "heap")
+                .build();
+        this.meter.gaugeBuilder("observability_memory_usage")
+                .ofLongs()
+                .setDescription("Current JVM memory usage")
+                .setUnit("bytes")
+                .buildWithCallback(measurement -> measurement.record(memoryUsage, attributes));
 
         return proceed;
     }
@@ -83,11 +106,11 @@ public class ObservabilityAspect {
 
     @After("@annotation(observability.otel.annotation.ObservabilityParam)")
     public void logAfter(JoinPoint joinPoint) {
-        SpanContext spanContext = Span.current().getSpanContext();
-        MemoryMXBean memoryMXBean = ManagementFactory.getMemoryMXBean();
-        MemoryUsage heapMemoryUsage = memoryMXBean.getHeapMemoryUsage();
-        long usedMemory = heapMemoryUsage.getUsed();
+        // Código para ser executado após a execução do método anotado
+    }
 
-        memoryUsageCounter.add(usedMemory);
+    private static long getMemoryUsage() {
+        // Implementação para obter o uso real de memória
+        return Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
     }
 }
