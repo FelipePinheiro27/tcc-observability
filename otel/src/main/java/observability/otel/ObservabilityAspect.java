@@ -4,7 +4,6 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
-import io.opentelemetry.api.metrics.LongUpDownCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanContext;
@@ -24,6 +23,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
@@ -32,42 +33,39 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 public class ObservabilityAspect {
     private final LongCounter requestCounter;
-    private final LongUpDownCounter dataVolumeCounter;
+    private final LongCounter dataVolumeCounter;
+    private final LongCounter memoryUsageCounter;
+    private final LongCounter cpuUsageCounter;
     private final AtomicLong lastMemoryUsage = new AtomicLong();
     private final AtomicLong serviceStartTime = new AtomicLong();
     private final Meter meter;
-
 
     @Autowired
     private SpanAttributesService spanAttributesService;
 
     @Autowired
     public ObservabilityAspect(OpenTelemetry openTelemetry) {
-            this.meter = openTelemetry.getMeter(OtelApplication.class.getName());
+        this.meter = openTelemetry.getMeter(OtelApplication.class.getName());
 
-            this.requestCounter = meter.counterBuilder("observability_requests_total")
-                    .setDescription("Total number of requests")
-                    .setUnit("requests")
-                    .build();
+        this.requestCounter = meter.counterBuilder("observability_requests_total")
+                .setDescription("Total number of requests")
+                .setUnit("requests")
+                .build();
 
-            this.dataVolumeCounter = meter.upDownCounterBuilder("observability_data_volume")
-                    .setDescription("Data volume processed by the service")
-                    .setUnit("bytes")
-                    .build();
+        this.dataVolumeCounter = meter.counterBuilder("observability_data_volume")
+                .setDescription("Data volume processed by the service")
+                .setUnit("bytes")
+                .build();
 
-            this.meter.gaugeBuilder("observability_memory_usage")
-                    .ofLongs()
-                    .setDescription("Current JVM memory usage")
-                    .setUnit("bytes")
-                    .buildWithCallback(measurement -> {
-                        long memoryUsage = lastMemoryUsage.get();
-                        Attributes attributes = Attributes.builder()
-                                .put(AttributeKey.stringKey("method"), "last_method")
-                                .put(AttributeKey.stringKey("spanId"), "last_span_id")
-                                .put(AttributeKey.stringKey("type"), "heap")
-                                .build();
-                        measurement.record(memoryUsage, attributes);
-                    });
+        this.memoryUsageCounter = meter.counterBuilder("observability_memory_usage")
+                .setDescription("Current JVM memory usage")
+                .setUnit("bytes")
+                .build();
+
+        this.cpuUsageCounter = meter.counterBuilder("observability_cpu_usage")
+                .setDescription("Current JVM CPU usage")
+                .setUnit("percentage")
+                .build();
     }
 
     @Around("@annotation(observabilityParam)")
@@ -94,27 +92,23 @@ public class ObservabilityAspect {
         long outputDataSize = getDataSize(proceed);
         long totalDataVolume = inputDataSize + outputDataSize;
 
-        requestCounter.add(1, Attributes.builder().put(AttributeKey.stringKey("method"), methodName.getName()).build());
-        SpanContext spanContext = Span.current().getSpanContext();
-
         long memoryUsage = getMemoryUsage();
         lastMemoryUsage.set(memoryUsage);
+        SpanContext spanContext = Span.current().getSpanContext();
 
-        dataVolumeCounter.add(totalDataVolume, Attributes.builder()
-                .put(AttributeKey.stringKey("method"), methodName.getName())
-                .put(AttributeKey.stringKey("spanId"), spanContext.getSpanId())
-                .build());
-
+        double cpuUsage = getCpuUsage();
         Attributes attributes = Attributes.builder()
                 .put(AttributeKey.stringKey("method"), methodName.getName())
                 .put(AttributeKey.stringKey("spanId"), spanContext.getSpanId())
-                .put(AttributeKey.stringKey("type"), "heap")
                 .build();
-        this.meter.gaugeBuilder("observability_memory_usage")
-                .ofLongs()
-                .setDescription("Current JVM memory usage")
-                .setUnit("bytes")
-                .buildWithCallback(measurement -> measurement.record(memoryUsage, attributes));
+
+        requestCounter.add(1, attributes);
+
+        dataVolumeCounter.add(totalDataVolume, attributes);
+
+        memoryUsageCounter.add(memoryUsage, attributes);
+
+        cpuUsageCounter.add((long) cpuUsage, attributes);
 
         return proceed;
     }
@@ -150,5 +144,14 @@ public class ObservabilityAspect {
 
     private static long getMemoryUsage() {
         return Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
+    }
+
+    private static double getCpuUsage() {
+        OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+        if (osBean instanceof com.sun.management.OperatingSystemMXBean) {
+            com.sun.management.OperatingSystemMXBean sunOsBean = (com.sun.management.OperatingSystemMXBean) osBean;
+            return sunOsBean.getProcessCpuLoad() * 100;
+        }
+        return 0;
     }
 }

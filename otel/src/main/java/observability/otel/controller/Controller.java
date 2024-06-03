@@ -75,6 +75,25 @@ public class Controller {
         return "Created " + totalSize + " large objects";
     }
 
+    @GetMapping("/large-metrica")
+    @ResponseStatus(HttpStatus.OK)
+    @ObservabilityParam(params = {
+            @Param(key = "cpuStorage", value = "10"),
+            @Param(key = "memory", value = "20"),
+            @Param(key = "responseTime", value = "55")
+    })
+    public String metricaLarge() {
+        List<LargeObject> largeObjectList = new ArrayList<>();
+
+        for (int i = 0; i < 150000; i++) { // Ajuste o valor para aumentar o consumo de memória
+            largeObjectList.add(new LargeObject("Data " + i, new byte[1024])); // Cada objeto terá 1 KB de dados
+        }
+
+        long totalSize = largeObjectList.size();
+
+        return "Created " + totalSize + " large objects";
+    }
+
     static class LargeObject {
         private String name;
         private byte[] data;
