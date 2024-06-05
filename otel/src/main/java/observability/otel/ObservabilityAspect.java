@@ -25,9 +25,11 @@ import java.lang.reflect.Method;
 public class ObservabilityAspect {
     private final LongCounter requestCounter;
     private final LongCounter memoryUsageCounter;
+    private long memoryUsageFirstValue;
     private final Meter meter;
-    private double networkFirstTransferData;
+    private double networkTransferDataFirstValue;
     private final Metric metric = new Metric();
+    private String serviceName;
     @Autowired
     private SpanAttributesService spanAttributesService;
 
@@ -50,6 +52,7 @@ public class ObservabilityAspect {
     public Object logExecutionTime(ProceedingJoinPoint joinPoint, ObservabilityParam observabilityParam) throws Throwable {
         Param[] params = observabilityParam.params();
         Method methodName = spanAttributesService.getMethod(joinPoint);
+        serviceName = methodName.getName();
 
         for (Param param : params) {
             String key = param.key();
@@ -58,7 +61,6 @@ public class ObservabilityAspect {
         }
 
         Span.current().setAttribute("serviceName", methodName.getName());
-
         Object proceed = joinPoint.proceed();
 
         SpanContext spanContext = Span.current().getSpanContext();
@@ -67,13 +69,12 @@ public class ObservabilityAspect {
                 .put(AttributeKey.stringKey("spanId"), spanContext.getSpanId())
                 .build();
 
-        networkFirstTransferData = metric.getSumNetworkIo();
+        networkTransferDataFirstValue = metric.getSumNetworkIo();
 
         double cpuUsage = metric.getCpuUsage();
-        long memoryUsage = metric.getMemoryUsage();
+        memoryUsageFirstValue = metric.getMemoryUsage();
 
         requestCounter.add(1, attributes);
-        memoryUsageCounter.add(memoryUsage, attributes);
         this.meter.gaugeBuilder("observability_cpu_usage")
                 .setDescription("Current JVM memory usage")
                 .setUnit("percentage")
@@ -84,19 +85,23 @@ public class ObservabilityAspect {
 
     @After("@annotation(observability.otel.annotation.ObservabilityParam)")
     public void logAfter(JoinPoint joinPoint) {
-        double secondTransferData = metric.getSumNetworkIo();
-        double throughput = (secondTransferData - networkFirstTransferData)/10;
-        System.out.println("secondTransferData: " + secondTransferData);
-        System.out.println("networkFirstTransferData: " + networkFirstTransferData);
-        System.out.println("secondTransferData - networkFirstTransferData: " + (secondTransferData - networkFirstTransferData));
+        double networkTransferDataSecondValue = metric.getSumNetworkIo();
+        long memoryUsageSecondValue = metric.getMemoryUsage();
+        double throughput = networkTransferDataSecondValue - networkTransferDataFirstValue;
+        long memoryUsage = memoryUsageSecondValue - memoryUsageFirstValue;
+        System.out.println("networkTransferDataSecondValue: " + networkTransferDataSecondValue);
+        System.out.println("networkTransferDataFirstValue: " + networkTransferDataFirstValue);
+        System.out.println("networkTransferDataSecondValue - networkTransferDataFirstValue: " + (networkTransferDataSecondValue - networkTransferDataFirstValue));
         SpanContext spanContext = Span.current().getSpanContext();
         Attributes attributes = Attributes.builder()
                 .put(AttributeKey.stringKey("spanId"), spanContext.getSpanId())
+                .put(AttributeKey.stringKey("serviceName"), serviceName)
                 .build();
 
         this.meter.gaugeBuilder("observability_throughput")
                 .setUnit("bytes")
                 .buildWithCallback(measurement -> measurement.record(throughput, attributes));
+        memoryUsageCounter.add(memoryUsage, attributes);
     }
 
 
