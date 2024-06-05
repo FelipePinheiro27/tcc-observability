@@ -1,10 +1,11 @@
 receivers:
   hostmetrics:
-    collection_interval: 1m
+    collection_interval: 10s
     scrapers:
       cpu:
       memory:
       load:
+      network:
   otlp:
     protocols:
       http:

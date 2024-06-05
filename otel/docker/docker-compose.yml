@@ -32,6 +32,7 @@ services:
     image: otel/opentelemetry-collector-contrib:0.99.0
     volumes:
       - ./otel-config.yaml:/otel-config.yaml
+      - /:/hostfs
     command: ["--config=/otel-config.yaml"]
     expose:
       - "4318"

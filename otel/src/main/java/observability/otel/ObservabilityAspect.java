@@ -3,6 +3,8 @@ package observability.otel;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.DoubleCounter;
+import io.opentelemetry.api.metrics.DoubleCounterBuilder;
 import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
@@ -10,38 +12,55 @@ import io.opentelemetry.api.trace.SpanContext;
 import observability.otel.annotation.ObservabilityParam;
 import observability.otel.annotation.Param;
 import observability.otel.service.SpanAttributesService;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
-import java.time.Instant;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.HashMap;
+import java.util.Map;
 
 @Aspect
 @Component
 public class ObservabilityAspect {
     private final LongCounter requestCounter;
-    private final LongCounter dataVolumeCounter;
     private final LongCounter memoryUsageCounter;
-    private final LongCounter cpuUsageCounter;
-    private final AtomicLong lastMemoryUsage = new AtomicLong();
-    private final AtomicLong serviceStartTime = new AtomicLong();
     private final Meter meter;
+    private double networkFirstTransferData;
+    private static final String PROMETHEUS_API_URL_QUERY = "http://172.17.0.1:9090/api/v1/query?query=";
 
     @Autowired
     private SpanAttributesService spanAttributesService;
+
+    public JSONArray getPrometheusMetric(String prometheusUrl) {
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+            HttpGet request = new HttpGet(prometheusUrl);
+            try (CloseableHttpResponse response = httpClient.execute(request)) {
+                String jsonResponse = EntityUtils.toString(response.getEntity());
+                JSONObject jsonObject = new JSONObject(jsonResponse);
+                JSONArray resultArray = jsonObject.getJSONObject("data").getJSONArray("result");
+
+                return resultArray;
+            }
+        }
+        catch (Exception e) {
+            System.err.println("Error: " + e);
+        }
+
+        return new JSONArray();
+    }
 
     @Autowired
     public ObservabilityAspect(OpenTelemetry openTelemetry) {
@@ -52,19 +71,9 @@ public class ObservabilityAspect {
                 .setUnit("requests")
                 .build();
 
-        this.dataVolumeCounter = meter.counterBuilder("observability_data_volume")
-                .setDescription("Data volume processed by the service")
-                .setUnit("bytes")
-                .build();
-
         this.memoryUsageCounter = meter.counterBuilder("observability_memory_usage")
                 .setDescription("Current JVM memory usage")
                 .setUnit("bytes")
-                .build();
-
-        this.cpuUsageCounter = meter.counterBuilder("observability_cpu_usage")
-                .setDescription("Current JVM CPU usage")
-                .setUnit("percentage")
                 .build();
     }
 
@@ -81,77 +90,111 @@ public class ObservabilityAspect {
 
         Span.current().setAttribute("serviceName", methodName.getName());
 
-        long startTime = Instant.now().toEpochMilli();
-        serviceStartTime.set(startTime);
-
-        Object[] args = joinPoint.getArgs();
-        long inputDataSize = getDataSize(args);
-
         Object proceed = joinPoint.proceed();
 
-        long outputDataSize = getDataSize(proceed);
-        long totalDataVolume = inputDataSize + outputDataSize;
-
-        long memoryUsage = getMemoryUsage();
-        lastMemoryUsage.set(memoryUsage);
         SpanContext spanContext = Span.current().getSpanContext();
-
-        double cpuUsage = getCpuUsage();
         Attributes attributes = Attributes.builder()
                 .put(AttributeKey.stringKey("method"), methodName.getName())
                 .put(AttributeKey.stringKey("spanId"), spanContext.getSpanId())
                 .build();
 
+        double cpuUsage = getCpuUsage();
+        long memoryUsage = getMemoryUsage();
+
         requestCounter.add(1, attributes);
-
-        dataVolumeCounter.add(totalDataVolume, attributes);
-
         memoryUsageCounter.add(memoryUsage, attributes);
-
-        cpuUsageCounter.add((long) cpuUsage, attributes);
+        this.meter.gaugeBuilder("observability_cpu_usage")
+                .setDescription("Current JVM memory usage")
+                .setUnit("percentage")
+                .buildWithCallback(measurement -> measurement.record(cpuUsage, attributes));
 
         return proceed;
     }
 
     @Before("@annotation(observability.otel.annotation.ObservabilityParam)")
     public void logBefore(JoinPoint joinPoint) {
+        networkFirstTransferData = getSumNetworkIo();
     }
 
     @After("@annotation(observability.otel.annotation.ObservabilityParam)")
     public void logAfter(JoinPoint joinPoint) {
-        lastMemoryUsage.set(0);
-        serviceStartTime.set(0);
+        double secondTransferData = getSumNetworkIo();
+        double throughput = (secondTransferData - networkFirstTransferData)/10;
+        System.out.println("secondTransferData: " + secondTransferData);
+        System.out.println("networkFirstTransferData: " + networkFirstTransferData);
+        System.out.println("secondTransferData - networkFirstTransferData: " + (secondTransferData - networkFirstTransferData));
+        SpanContext spanContext = Span.current().getSpanContext();
+        Attributes attributes = Attributes.builder()
+                .put(AttributeKey.stringKey("spanId"), spanContext.getSpanId())
+                .build();
+
+        this.meter.gaugeBuilder("observability_throughput")
+                .setUnit("bytes")
+                .buildWithCallback(measurement -> measurement.record(throughput, attributes));
     }
 
-    private long getDataSize(Object data) {
-        if (data instanceof byte[]) {
-            return ((byte[]) data).length;
-        } else if (data instanceof String) {
-            return ((String) data).getBytes().length;
-        } else if (data instanceof Serializable) {
-            try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                 ObjectOutputStream oos = new ObjectOutputStream(bos)) {
-                oos.writeObject(data);
-                oos.flush();
-                return bos.toByteArray().length;
-            } catch (IOException e) {
-                e.printStackTrace();
-                return 0;
+    private double getSumNetworkIo() {
+        JSONArray networkArray = getPrometheusMetric(PROMETHEUS_API_URL_QUERY + "system_network_io_bytes_total");
+        double receive = 0, transmit = 0;
+
+        for (int i = 0; i < networkArray.length(); i++) {
+            JSONObject result = networkArray.getJSONObject(i);
+            String resultDevice = result.getJSONObject("metric").getString("device");
+            String resultDirection = result.getJSONObject("metric").getString("direction");
+
+            if (resultDevice.equals("eth0") && resultDirection.equals("receive")) {
+                receive = result.getJSONArray("value").getDouble(1);
+            }
+            if (resultDevice.equals("eth0") && resultDirection.equals("transmit")) {
+                transmit = result.getJSONArray("value").getDouble(1);
             }
         }
-        return 0;
+
+        return receive + transmit;
     }
 
-    private static long getMemoryUsage() {
-        return Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory();
-    }
+    private long getMemoryUsage() {
+        JSONArray memoryArray = getPrometheusMetric(PROMETHEUS_API_URL_QUERY + "system_memory_usage_bytes");
+        long usedValue = -1;
+        for (int i = 0; i < memoryArray.length(); i++) {
+            JSONObject jsonObject = memoryArray.getJSONObject(i);
+            JSONObject metric = jsonObject.getJSONObject("metric");
+            String state = metric.getString("state");
 
-    private static double getCpuUsage() {
-        OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
-        if (osBean instanceof com.sun.management.OperatingSystemMXBean) {
-            com.sun.management.OperatingSystemMXBean sunOsBean = (com.sun.management.OperatingSystemMXBean) osBean;
-            return sunOsBean.getProcessCpuLoad() * 100;
+            if ("used".equals(state)) {
+                JSONArray value = jsonObject.getJSONArray("value");
+                usedValue = value.getLong(1);
+                break;
+            }
         }
-        return 0;
+
+        return usedValue;
+    }
+
+    private double getCpuUsage() {
+        JSONArray cpusArray = getPrometheusMetric(PROMETHEUS_API_URL_QUERY + "system_cpu_time_seconds_total");
+        double cpuUsage = -1;
+
+        Map<String, Double> cpuIdleTimes = new HashMap<>();
+        Map<String, Double> cpuTotalTimes = new HashMap<>();
+
+        for (int i = 0; i < cpusArray.length(); i++) {
+            JSONObject result = cpusArray.getJSONObject(i);
+            String cpu = result.getJSONObject("metric").getString("cpu");
+            String state = result.getJSONObject("metric").getString("state");
+            double value = result.getJSONArray("value").getDouble(1);
+
+            if (state.equals("idle")) {
+                cpuIdleTimes.put(cpu, value);
+            }
+
+            cpuTotalTimes.put(cpu, cpuTotalTimes.getOrDefault(cpu, 0.0) + value);
+        }
+
+        double totalIdleTime = cpuIdleTimes.values().stream().mapToDouble(Double::doubleValue).sum();
+        double totalTime = cpuTotalTimes.values().stream().mapToDouble(Double::doubleValue).sum();
+        cpuUsage = 100 * (1 - (totalIdleTime / totalTime));
+
+        return Math.round(cpuUsage * 100.0) / 100.0;
     }
 }

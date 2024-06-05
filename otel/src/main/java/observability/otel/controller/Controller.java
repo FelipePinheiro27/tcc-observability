@@ -63,12 +63,14 @@ public class Controller {
             @Param(key = "memory", value = "20"),
             @Param(key = "responseTime", value = "55")
     })
-    public String metrica() {
+    public String metrica() throws InterruptedException {
         List<LargeObject> largeObjectList = new ArrayList<>();
 
         for (int i = 0; i < 100000; i++) { // Ajuste o valor para aumentar o consumo de memória
             largeObjectList.add(new LargeObject("Data " + i, new byte[1024])); // Cada objeto terá 1 KB de dados
         }
+
+        Thread.sleep(15000);
 
         long totalSize = largeObjectList.size();
 
