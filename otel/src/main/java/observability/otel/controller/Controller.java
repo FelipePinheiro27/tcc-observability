@@ -1,26 +1,16 @@
 package observability.otel.controller;
 
-import observability.otel.AllMetrics;
-import observability.otel.GeneralMetrics;
 import observability.otel.annotation.ObservabilityParam;
 import observability.otel.annotation.Param;
-import observability.otel.service.MetricDataService;
-import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
 public class Controller {
-    @Autowired
-    private MetricDataService metricDataService;
-
     @GetMapping("/testGet/{name}")
     @ResponseStatus(HttpStatus.OK)
     @ObservabilityParam(params = {
