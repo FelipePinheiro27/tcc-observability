@@ -1,4 +1,4 @@
-package observability.otel;
+package tcc.metrics;
 
 import lombok.Data;
 

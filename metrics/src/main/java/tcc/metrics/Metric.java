@@ -1,4 +1,4 @@
-package observability.otel;
+package tcc.metrics;
 
 public class Metric {
     private String serviceName;

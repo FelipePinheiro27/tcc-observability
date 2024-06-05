@@ -1,7 +1,7 @@
-package observability.otel.service.impl;
+package tcc.metrics.service.impl;
 
-import observability.otel.*;
-import observability.otel.service.MetricDataService;
+import tcc.metrics.*;
+import tcc.metrics.service.MetricDataService;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -9,6 +9,9 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import tcc.metrics.AllMetrics;
+import tcc.metrics.GeneralMetrics;
+import tcc.metrics.SpecificMetrics;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -18,9 +21,8 @@ import java.util.List;
 import java.util.Map;
 
 public class MetricDataServiceImpl implements MetricDataService {
-
-    private static final String JAEGER_API_URL = "http://172.17.0.1:16686/api/traces?service=custom-annotation";
-    private static final String PROMETHEUS_API_URL = "http://172.17.0.1:9090/api/v1/query?query=do_observability_count";
+    private static final String JAEGER_API_URL = "http://localhost:8080/api/traces?service=custom-annotation";
+    private static final String PROMETHEUS_API_URL = "http://localhost:9090/api/v1/query?query=do_observability_count";
 
     public Map<String, Object> parseMetricDataToHashMap(JSONArray jsonArray) {
         Map<String, Object> hashMap = new HashMap<>();

@@ -1,4 +1,4 @@
-package observability.otel;
+package tcc.metrics;
 
 public class ServiceMetrics {
     private double serviceTimeTotal = 0;

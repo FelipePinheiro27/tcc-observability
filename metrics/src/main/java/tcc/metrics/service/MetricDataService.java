@@ -1,7 +1,7 @@
-package observability.otel.service;
+package tcc.metrics.service;
 
-import observability.otel.AllMetrics;
-import observability.otel.GeneralMetrics;
+import tcc.metrics.AllMetrics;
+import tcc.metrics.GeneralMetrics;
 
 import java.util.List;
 
