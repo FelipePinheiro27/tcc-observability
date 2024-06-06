@@ -60,25 +60,15 @@ public class ObservabilityAspect {
             Span.current().setAttribute(AttributeKey.stringKey(key), value);
         }
 
-        Span.current().setAttribute("serviceName", methodName.getName());
         Object proceed = joinPoint.proceed();
-
-        SpanContext spanContext = Span.current().getSpanContext();
-        Attributes attributes = Attributes.builder()
-                .put(AttributeKey.stringKey("method"), methodName.getName())
-                .put(AttributeKey.stringKey("spanId"), spanContext.getSpanId())
-                .build();
 
         networkTransferDataFirstValue = metric.getSumNetworkIo();
 
         double cpuUsage = metric.getCpuUsage();
         memoryUsageFirstValue = metric.getMemoryUsage();
 
-        requestCounter.add(1, attributes);
-        this.meter.gaugeBuilder("observability_cpu_usage")
-                .setDescription("Current JVM memory usage")
-                .setUnit("percentage")
-                .buildWithCallback(measurement -> measurement.record(cpuUsage, attributes));
+        Span.current().setAttribute("serviceName", methodName.getName());
+        Span.current().setAttribute("cpuUsage", cpuUsage);
 
         return proceed;
     }
@@ -92,17 +82,7 @@ public class ObservabilityAspect {
         System.out.println("networkTransferDataSecondValue: " + networkTransferDataSecondValue);
         System.out.println("networkTransferDataFirstValue: " + networkTransferDataFirstValue);
         System.out.println("networkTransferDataSecondValue - networkTransferDataFirstValue: " + (networkTransferDataSecondValue - networkTransferDataFirstValue));
-        SpanContext spanContext = Span.current().getSpanContext();
-        Attributes attributes = Attributes.builder()
-                .put(AttributeKey.stringKey("spanId"), spanContext.getSpanId())
-                .put(AttributeKey.stringKey("serviceName"), serviceName)
-                .build();
-
-        this.meter.gaugeBuilder("observability_throughput")
-                .setUnit("bytes")
-                .buildWithCallback(measurement -> measurement.record(throughput, attributes));
-        memoryUsageCounter.add(memoryUsage, attributes);
+        Span.current().setAttribute("memoryUsage", memoryUsage);
+        Span.current().setAttribute("throughput", throughput);
     }
-
-
 }
