@@ -56,11 +56,11 @@ public class Controller {
     public String metrica() throws InterruptedException {
         List<LargeObject> largeObjectList = new ArrayList<>();
 
-        for (int i = 0; i < 100000; i++) { // Ajuste o valor para aumentar o consumo de memória
-            largeObjectList.add(new LargeObject("Data " + i, new byte[1024])); // Cada objeto terá 1 KB de dados
+        for (int i = 0; i < 100000; i++) {
+            largeObjectList.add(new LargeObject("Data " + i, new byte[1024]));
         }
 
-        Thread.sleep(15000);
+        Thread.sleep(5000);
 
         long totalSize = largeObjectList.size();
 
@@ -74,13 +74,14 @@ public class Controller {
             @Param(key = "memory", value = "20"),
             @Param(key = "responseTime", value = "55")
     })
-    public String metricaLarge() {
+    public String metricaLarge() throws InterruptedException {
         List<LargeObject> largeObjectList = new ArrayList<>();
 
-        for (int i = 0; i < 150000; i++) { // Ajuste o valor para aumentar o consumo de memória
-            largeObjectList.add(new LargeObject("Data " + i, new byte[1024])); // Cada objeto terá 1 KB de dados
+        for (int i = 0; i < 599000; i++) {
+            largeObjectList.add(new LargeObject("Data " + i, new byte[1024]));
         }
 
+        Thread.sleep(5000);
         long totalSize = largeObjectList.size();
 
         return "Created " + totalSize + " large objects";
