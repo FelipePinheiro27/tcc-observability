@@ -2,11 +2,8 @@ package observability.otel;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.common.Attributes;
-import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.SpanContext;
 import observability.otel.annotation.ObservabilityParam;
 import observability.otel.annotation.Param;
 import observability.otel.service.SpanAttributesService;
@@ -52,6 +49,7 @@ public class ObservabilityAspect {
 
         Span.current().setAttribute("serviceName", methodName.getName());
         Span.current().setAttribute("cpuUsageReceived", cpuUsage);
+        Span.current().setAttribute("isObservabilitySpan", true);
 
         return proceed;
     }
@@ -69,9 +67,6 @@ public class ObservabilityAspect {
         long memoryUsageSecondValue = metric.getMemoryUsage();
         double throughput = networkTransferDataSecondValue - networkTransferDataFirstValue;
         long memoryUsage = memoryUsageSecondValue - memoryUsageFirstValue;
-        System.out.println("networkTransferDataSecondValue: " + networkTransferDataSecondValue);
-        System.out.println("networkTransferDataFirstValue: " + networkTransferDataFirstValue);
-        System.out.println("networkTransferDataSecondValue - networkTransferDataFirstValue: " + (networkTransferDataSecondValue - networkTransferDataFirstValue));
         Span.current().setAttribute("memoryUsageReceived", memoryUsage);
         Span.current().setAttribute("throughputReceived", throughput);
     }

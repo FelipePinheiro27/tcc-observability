@@ -1,6 +1,6 @@
 receivers:
   hostmetrics:
-    collection_interval: 1s
+    collection_interval: 1.9s
     scrapers:
       cpu:
       memory:
@@ -9,6 +9,12 @@ receivers:
   otlp:
     protocols:
       http:
+processors:
+  filter:
+    error_mode: ignore
+    traces:
+      span:
+        - attributes["server.address"] == "172.17.0.1"
 exporters:
   logging:
     verbosity: detailed
@@ -18,14 +24,18 @@ exporters:
     endpoint: "http://jaeger:4317"
     tls:
       insecure: true
+
 service:
   pipelines:
     metrics:
       receivers: [otlp, hostmetrics]
+      processors: []
       exporters: [logging, prometheus]
     traces:
       receivers: [otlp]
+      processors: [filter]
       exporters: [logging, otlp]
     logs:
       receivers: [otlp]
+      processors: []
       exporters: [logging]
