@@ -22,25 +22,7 @@ import java.util.Map;
 
 public class MetricDataServiceImpl implements MetricDataService {
     private static final String JAEGER_API_URL = "http://localhost:16686/api/traces?service=custom-annotation";
-
-    public Map<String, Object> parseMetricDataToHashMap(JSONArray jsonArray) {
-        Map<String, Object> hashMap = new HashMap<>();
-
-        for (int i = 0; i < jsonArray.length(); i++) {
-            JSONObject metricObject = jsonArray.getJSONObject(i).getJSONObject("metric");
-            String spanId = metricObject.getString("span");
-            System.out.println("parseMetricDataToHashMap: " + spanId);
-            Map<String, Object> valueMap = new HashMap<>();
-            valueMap.put("trace", metricObject.getString("trace"));
-            valueMap.put("memoryUsage", metricObject.getString("memoryUsage"));
-            valueMap.put("cpuStorage", metricObject.getString("cpuStorage"));
-            valueMap.put("serviceTime", metricObject.getString("serviceTime"));
-
-            hashMap.put(spanId, valueMap);
-        }
-
-        return hashMap;
-    }
+    private final Metric metric = new Metric();
 
     public JSONArray getTraces() {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
@@ -214,19 +196,26 @@ public class MetricDataServiceImpl implements MetricDataService {
                 long startTime = span.getLong("startTime") / 1000;
                 boolean isLastFiveMin = startTime >= startTimeMillis && startTime <= currentTimeMillis;
                 int statusCode = 0;
+                boolean isObservabilitySpan = false;
 
                 for (int k = 0; k < tags.length(); k++) {
                     JSONObject tag = tags.getJSONObject(k);
-                    if (tag.getString("key").equals("http.response.status_code")) {
-                        statusCode = tag.getInt("value");
+                    switch (tag.getString("key")) {
+                        case "http.response.status_code":
+                            statusCode = tag.getInt("value");
+                            break;
+                        case "isObservabilitySpan":
+                            isObservabilitySpan = tag.getBoolean("value");
+                            break;
                     }
                 }
-
-                totalRequests++;
-                if(statusCode >= 400)
-                    totalErrors++;
-                if(isLastFiveMin)
-                    requestsFiveMinutes++;
+                if(isObservabilitySpan) {
+                    totalRequests++;
+                    if(statusCode >= 400)
+                        totalErrors++;
+                    if(isLastFiveMin)
+                        requestsFiveMinutes++;
+                }
             }
         }
 
@@ -242,5 +231,14 @@ public class MetricDataServiceImpl implements MetricDataService {
     public GeneralMetrics getSystemMetrics() {
         JSONArray traces = getTraces();
         return FillSystemMetrics(traces);
+    }
+
+    public PrometheusMetrics getPrometheusMetric() {
+        PrometheusMetrics prometheusMetrics = new PrometheusMetrics();
+        prometheusMetrics.setCpuUsage(metric.getCpuUsage());
+        prometheusMetrics.setMemory(metric.getMemoryUsage());
+        prometheusMetrics.setThroughput(metric.getSumNetworkIo());
+
+        return prometheusMetrics;
     }
 }

@@ -2,6 +2,7 @@ package tcc.metrics.controller;
 
 import tcc.metrics.AllMetrics;
 import tcc.metrics.GeneralMetrics;
+import tcc.metrics.PrometheusMetrics;
 import tcc.metrics.service.MetricDataService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,21 +18,16 @@ public class ObservabilityController {
     private MetricDataService metricDataService;
     @GetMapping("/system-info")
     public GeneralMetrics getSystemInfo() {
-        GeneralMetrics generalMetrics = metricDataService.getSystemMetrics();
-
-        return generalMetrics;
+        return metricDataService.getSystemMetrics();
     }
 
     @GetMapping("all")
     public List<AllMetrics> getAllServices() {
-        List<AllMetrics> metrics = metricDataService.getAllMetrics();
-
-        return metrics;
-
+        return metricDataService.getAllMetrics();
     }
 
-    @GetMapping("test")
-    public String test() {
-        return "testando";
+    @GetMapping("prometheus-metrics")
+    public PrometheusMetrics getPrometheusMetrics() {
+        return metricDataService.getPrometheusMetric();
     }
 }
