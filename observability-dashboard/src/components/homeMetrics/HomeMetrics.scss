@@ -1,0 +1,15 @@
+.HomeMetrics{
+    margin-top: 8px;
+    font-size: 14px;
+    
+    &_values {
+        display: flex;
+        gap: 15px;
+    }
+
+    &_system-info {
+        position: relative;
+        float: right;
+        right: 1;
+    }
+}

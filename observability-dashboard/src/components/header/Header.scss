@@ -1,0 +1,16 @@
+@import '../../themes.scss';
+
+.Header{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    background-color: $blue-dark;
+    color: $primary-font;
+    height: 60px;
+}
+
+.jacques-francois-regular {
+    font-family: "Jacques Francois", serif;
+    font-style: normal;
+  }
