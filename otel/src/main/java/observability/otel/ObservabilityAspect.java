@@ -21,8 +21,9 @@ import java.lang.reflect.Method;
 @Aspect
 @Component
 public class ObservabilityAspect {
-    private long memoryUsageFirstValue;
     private final Meter meter;
+    private long memoryUsageFirstValue;
+    private double cpuUsageFirstValue;
     private double networkTransferDataFirstValue;
     private final Metric metric = new Metric();
     @Autowired
@@ -45,10 +46,8 @@ public class ObservabilityAspect {
         }
 
         Object proceed = joinPoint.proceed();
-        double cpuUsage = metric.getCpuUsage();
 
         Span.current().setAttribute("serviceName", methodName.getName());
-        Span.current().setAttribute("cpuUsageReceived", cpuUsage);
         Span.current().setAttribute("isObservabilitySpan", true);
 
         return proceed;
@@ -56,17 +55,21 @@ public class ObservabilityAspect {
 
     @Before("@annotation(observability.otel.annotation.ObservabilityParam)")
     public void logBefore(JoinPoint joinPoint) {
+        cpuUsageFirstValue = metric.getCpuUsage();
         networkTransferDataFirstValue = metric.getSumNetworkIo();
         memoryUsageFirstValue = metric.getMemoryUsage();
-        System.out.println("networkTransferDataFirstValueBefore: " + networkTransferDataFirstValue);
     }
 
     @After("@annotation(observability.otel.annotation.ObservabilityParam)")
     public void logAfter(JoinPoint joinPoint) {
         double networkTransferDataSecondValue = metric.getSumNetworkIo();
+        double cpuUsageSecondValue = metric.getCpuUsage();
         long memoryUsageSecondValue = metric.getMemoryUsage();
         double throughput = networkTransferDataSecondValue - networkTransferDataFirstValue;
         long memoryUsage = memoryUsageSecondValue - memoryUsageFirstValue;
+        double cpuUsage = cpuUsageSecondValue - cpuUsageFirstValue;
+
+        Span.current().setAttribute("cpuUsageReceived", cpuUsage);
         Span.current().setAttribute("memoryUsageReceived", memoryUsage);
         Span.current().setAttribute("throughputReceived", throughput);
     }
