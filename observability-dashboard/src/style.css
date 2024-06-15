@@ -4,6 +4,29 @@ html, body {
     position: relative;
 }
 
-h1 {
+h1,h2,h3,h4,h5 {
     margin: 0;
 }
+
+.jacques-francois-regular {
+    font-family: "Jacques Francois", serif;
+    font-style: normal;
+}
+
+  ::-webkit-scrollbar {
+    width: 4px; /* Largura da barra de rolagem vertical */
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1; /* Cor do trilho da barra de rolagem */
+    border-radius: 10px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #888; /* Cor do polegar (parte que se move) */
+    border-radius: 10px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555; /* Cor do polegar ao passar o mouse */
+  }

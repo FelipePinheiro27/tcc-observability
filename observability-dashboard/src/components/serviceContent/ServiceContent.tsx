@@ -1,0 +1,20 @@
+import "./ServiceContent.scss";
+
+const ServiceContent = () => {
+  return (
+    <div className="ServiceContent">
+      <div className="ServiceContent-risk">
+        <div
+          style={{ width: "100%", height: "100%" }}
+          className="ServiceContent-risk-low"
+        />
+      </div>
+      <div className="ServiceContent-value">
+        <div>getNumberOfUsers: /api/testGet/name</div>
+        <div>Low Risk</div>
+      </div>
+    </div>
+  );
+};
+
+export default ServiceContent;
