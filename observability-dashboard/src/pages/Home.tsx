@@ -5,7 +5,7 @@ import ServicesInfo from "../components/servicesInfo/ServicesInfo";
 const Home = () => {
   return (
     <>
-      <Header />
+      <Header homePage />
       <div style={{ marginLeft: 45, marginRight: 45 }}>
         <HomeMetrics />
         <ServicesInfo />

@@ -1,10 +1,13 @@
-import Detail from "./pages/Detail";
-import Home from "./pages/Home";
+import { BrowserRouter as Router } from "react-router-dom";
+import Navigator from "./routes/Navigator";
 
 function App() {
+  // const allData = ()
   return (
     <div className="App">
-      <Detail />
+      <Router>
+        <Navigator />
+      </Router>
     </div>
   );
 }

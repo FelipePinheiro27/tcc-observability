@@ -1,8 +1,15 @@
 import "./ServiceContent.scss";
 
-const ServiceContent = () => {
+interface IServiceContent {
+  onNavigateToDetail: (serviceName: string) => void;
+}
+
+const ServiceContent = ({ onNavigateToDetail }: IServiceContent) => {
   return (
-    <div className="ServiceContent">
+    <div
+      className="ServiceContent"
+      onClick={() => onNavigateToDetail("testing")}
+    >
       <div className="ServiceContent-risk">
         <div
           style={{ width: "100%", height: "100%" }}

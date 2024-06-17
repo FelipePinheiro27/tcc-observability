@@ -1,8 +1,14 @@
+import { useNavigate } from "react-router-dom";
 import SelectPriority from "../select/SelectPriority";
 import ServiceContent from "../serviceContent/ServiceContent";
 import "./ServicesInfo.scss";
 
 const ServicesInfo = () => {
+  const navigate = useNavigate();
+
+  const onNavigateToDetail = (serviceName: string) => {
+    navigate(`/detail/${serviceName}`);
+  };
   return (
     <div className="ServicesInfo">
       <div className="ServicesInfo_content">
@@ -13,17 +19,17 @@ const ServicesInfo = () => {
           </div>
         </div>
         <div className="ServicesInfo_content-list">
-          <ServiceContent />
+          <ServiceContent onNavigateToDetail={onNavigateToDetail} />
           <br />
-          <ServiceContent />
+          <ServiceContent onNavigateToDetail={onNavigateToDetail} />
           <br />
-          <ServiceContent />
+          <ServiceContent onNavigateToDetail={onNavigateToDetail} />
           <br />
-          <ServiceContent />
+          <ServiceContent onNavigateToDetail={onNavigateToDetail} />
           <br />
-          <ServiceContent />
+          <ServiceContent onNavigateToDetail={onNavigateToDetail} />
           <br />
-          <ServiceContent />
+          <ServiceContent onNavigateToDetail={onNavigateToDetail} />
         </div>
       </div>
     </div>
