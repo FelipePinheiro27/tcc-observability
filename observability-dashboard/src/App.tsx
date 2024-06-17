@@ -1,8 +1,7 @@
-import { BrowserRouter as Router } from "react-router-dom";
 import Navigator from "./routes/Navigator";
+import { BrowserRouter as Router } from "react-router-dom";
 
 function App() {
-  // const allData = ()
   return (
     <div className="App">
       <Router>

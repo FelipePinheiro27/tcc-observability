@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { createSvgIcon } from "@mui/material/utils";
 import "./Header.scss";
 
@@ -15,14 +15,14 @@ const HomeIcon = createSvgIcon(
 const Header = ({ label = "DASHBOARD", homePage = false }: IHeader) => {
   const navigate = useNavigate();
 
-  const handleHomeClick = () => {
+  const onRedirectHome = () => {
     navigate("/");
   };
 
   return (
     <div className="Header">
       {!homePage ? (
-        <div onClick={handleHomeClick} className="Header_home">
+        <div onClick={onRedirectHome} className="Header_home">
           <HomeIcon /> &nbsp;<p className="jacques-francois-regular">Home</p>
         </div>
       ) : (

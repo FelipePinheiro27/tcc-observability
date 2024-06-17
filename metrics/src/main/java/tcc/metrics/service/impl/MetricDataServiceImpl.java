@@ -79,7 +79,7 @@ public class MetricDataServiceImpl implements MetricDataService {
                 double cpuStorageReceived = 0, cpuStorageExpected = 0;
                 int statusCodeReceived = 0;
                 long memoryUsageReceived = 0, memoryUsageExpected = 0, responseTimeExpected = 0;
-                String currentServiceName = null;
+                String currentServiceName = null, routeName = null;
 
                 for (int k = 0; k < tags.length(); k++) {
                     JSONObject tag = tags.getJSONObject(k);
@@ -105,13 +105,17 @@ public class MetricDataServiceImpl implements MetricDataService {
                         case "isObservabilitySpan":
                             isObservabilitySpan = tag.getBoolean("value");
                             break;
-                        case "http.route":
+                        case "serviceName":
                             currentServiceName = tag.getString("value");
+                            break;
+                        case "http.route":
+                            routeName = tag.getString("value");
                             break;
                     }
                 }
             if (isObservabilitySpan) {
-                ServiceMetrics serviceMetrics = serviceMetricsMap.computeIfAbsent(currentServiceName, k -> new ServiceMetrics());
+                String allServiceName = currentServiceName + ": " + routeName;
+                ServiceMetrics serviceMetrics = serviceMetricsMap.computeIfAbsent(allServiceName, k -> new ServiceMetrics());
 
                     if (isLastFiveMin) {
                         serviceMetrics.incrementRequestCountBySecond();

@@ -1,5 +1,6 @@
 package tcc.metrics.controller;
 
+import org.springframework.web.bind.annotation.CrossOrigin;
 import tcc.metrics.AllMetrics;
 import tcc.metrics.GeneralMetrics;
 import tcc.metrics.PrometheusMetrics;
@@ -21,6 +22,7 @@ public class ObservabilityController {
         return metricDataService.getSystemMetrics();
     }
 
+    @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("all")
     public List<AllMetrics> getAllServices() {
         return metricDataService.getAllMetrics();
