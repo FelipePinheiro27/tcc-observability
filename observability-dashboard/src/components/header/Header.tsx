@@ -1,9 +1,13 @@
 import "./Header.scss";
 
-const Header = () => {
+interface IHeader {
+  label?: string;
+}
+
+const Header = ({ label = "DASHBOARD" }: IHeader) => {
   return (
     <div className="Header">
-      <p className="jacques-francois-regular">DASHBOARD</p>
+      <p className="jacques-francois-regular">{label}</p>
     </div>
   );
 };

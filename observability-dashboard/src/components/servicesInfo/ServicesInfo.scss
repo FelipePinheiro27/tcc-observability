@@ -8,10 +8,11 @@
     overflow-y: scroll;
 
     &_content{
-        padding: 25px 45px 25px 45px;
+        padding: 10px 45px 25px 45px;
         &-header{
             display: flex;
             justify-content: space-between;
+            align-items: center;
             h3 {
                 font-family: Arial, Helvetica, sans-serif;
             }

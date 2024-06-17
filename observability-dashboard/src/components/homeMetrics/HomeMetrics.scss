@@ -8,8 +8,13 @@
     }
 
     &_system-info {
+        display: flex;
+        align-items: center;
         position: relative;
+        cursor: pointer;
+        font-size: 16px;
         float: right;
         right: 1;
+        gap: 3px;
     }
 }

@@ -1,3 +1,4 @@
+import SelectPriority from "../select/SelectPriority";
 import ServiceContent from "../serviceContent/ServiceContent";
 import "./ServicesInfo.scss";
 
@@ -7,7 +8,9 @@ const ServicesInfo = () => {
       <div className="ServicesInfo_content">
         <div className="ServicesInfo_content-header">
           <h3 className="">6 Services Calleds</h3>
-          <div>select</div>
+          <div>
+            <SelectPriority />
+          </div>
         </div>
         <div className="ServicesInfo_content-list">
           <ServiceContent />
