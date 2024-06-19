@@ -47,7 +47,7 @@ const StatusCircle = () => {
         <DialogContent style={{ backgroundColor: "#ececec" }}>
           <GeneralnfoTable
             rows={[
-              { description: "requests", value: "20" },
+              { description: "Requests", value: "20" },
               { description: "Errors", value: "1" },
               { description: "Response Time Median", value: "183.10ms" },
               { description: "Throughput Median", value: "102133" },

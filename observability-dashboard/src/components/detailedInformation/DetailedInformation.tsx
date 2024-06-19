@@ -1,3 +1,5 @@
+import { ServiceMetrics } from "../../types/metricTypes";
+import { getRiskByMetrics } from "../../utils/serviceUtils";
 import CustomMetricsTable from "../customMetricsTable/CustomMetricsTable";
 import GeneralnfoTable from "../generalnfoTable/GeneralnfoTable";
 import StatusCircle from "../statusCircle/StatusCircle";
@@ -9,15 +11,31 @@ const colorByRisk = {
   high: "rgba(255, 19, 19, 0.7)",
 };
 
-const DetailedInformation = () => {
+interface IDetailedInformation {
+  serviceMetrics?: ServiceMetrics;
+}
+
+const DetailedInformation = ({ serviceMetrics }: IDetailedInformation) => {
+  const { generalMetrics, specificMetrics, serviceName } = serviceMetrics || {};
+  const { requestsQtt, errorsQtt } = generalMetrics || {};
+  const {
+    averageCpuUsage,
+    averageMemoryUsage,
+    averageResponseTime,
+    expectedCpuUsage,
+    expectedMemoryUsage,
+    expectedResponseTime,
+  } = specificMetrics || {};
+  const risk = getRiskByMetrics(serviceMetrics);
+
   return (
     <>
       <div
-        style={{ backgroundColor: colorByRisk["low"] }}
+        style={{ backgroundColor: colorByRisk[risk || "low"] }}
         className="DetailedInformationHeader"
       >
-        <div>getNumberOfUsers: /api/testGet/test</div>
-        <div>Low Risk</div>
+        <div>{serviceName}</div>
+        <div>{risk} risk</div>
       </div>
       <div className="DetailedInformation">
         <div className="DetailedInformation_content">
@@ -25,10 +43,15 @@ const DetailedInformation = () => {
           <br />
           <GeneralnfoTable
             rows={[
-              { description: "requests", value: "20" },
-              { description: "Errors", value: "1" },
-              { description: "Response Time Median", value: "183.10ms" },
-              { description: "Throughput Median", value: "102133" },
+              {
+                description: "Requests",
+                value: String(requestsQtt),
+              },
+              { description: "Errors", value: String(errorsQtt) },
+              {
+                description: "Response Time Median",
+                value: `${averageResponseTime}s`,
+              },
             ]}
           />
           <br />
@@ -38,15 +61,21 @@ const DetailedInformation = () => {
           <CustomMetricsTable
             rows={[
               {
-                description: "requests",
-                expected: "20",
-                received: "12",
+                description: "Response Time",
+                expected: `${expectedResponseTime}s`,
+                received: `${averageResponseTime}s`,
                 status: <StatusCircle />,
               },
               {
-                description: "requests",
-                expected: "20",
-                received: "12",
+                description: "Memory Usage",
+                expected: String(expectedMemoryUsage),
+                received: String(averageMemoryUsage),
+                status: <StatusCircle />,
+              },
+              {
+                description: "Cpu Usage",
+                expected: String(expectedCpuUsage),
+                received: String(averageCpuUsage),
                 status: <StatusCircle />,
               },
             ]}

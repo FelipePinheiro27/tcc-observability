@@ -3,18 +3,20 @@ import "./ServiceContent.scss";
 interface IServiceContent {
   onNavigateToDetail: (serviceName: string) => void;
   serviceName: string;
+  serviceId: string;
   risk: string;
 }
 
 const ServiceContent = ({
   onNavigateToDetail,
   serviceName,
+  serviceId,
   risk,
 }: IServiceContent) => {
   return (
     <div
       className="ServiceContent"
-      onClick={() => onNavigateToDetail(serviceName)}
+      onClick={() => onNavigateToDetail(serviceId)}
     >
       <div className="ServiceContent-risk">
         <div

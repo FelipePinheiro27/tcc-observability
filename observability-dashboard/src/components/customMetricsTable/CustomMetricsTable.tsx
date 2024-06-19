@@ -24,7 +24,7 @@ const CustomMetricsTable = ({ rows }: ICustomMetricsTable) => {
           <TableRow sx={{ height: "10px " }}>
             <StyledTableCell>Description</StyledTableCell>
             <StyledTableCell align="left">Expected</StyledTableCell>
-            <StyledTableCell align="left">Received</StyledTableCell>
+            <StyledTableCell align="left">Median Received</StyledTableCell>
             <StyledTableCell width={50} align="left"></StyledTableCell>
           </TableRow>
         </TableHead>

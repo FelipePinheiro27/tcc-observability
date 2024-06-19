@@ -11,7 +11,6 @@ interface SpecificMetrics {
   minResponseTime: number;
   minCpuStorage: number;
   minMemoryUsage: number;
-  medianReponseTime: number;
   spanMaxResponseTime: string;
   spanMaxCpuStorage: string;
   spanMaxMemoryUsage: string;
@@ -22,10 +21,23 @@ interface SpecificMetrics {
   cpuStorageOverflows: number;
   memoryUsageOverflows: number;
   allOverflows: number;
+  expectedCpuUsage: number;
+  expectedMemoryUsage: number;
+  expectedResponseTime: number;
+  averageCpuUsage: number;
+  averageMemoryUsage: number;
+  averageResponseTime: number;
 }
 
 export interface ServiceMetrics {
   generalMetrics: GeneralMetrics;
   specificMetrics: SpecificMetrics;
   serviceName: string;
+  id: string;
+}
+
+export interface SystemInfo {
+  requestsBySecond: number;
+  requestsQtt: number;
+  errorsQtt: number;
 }
