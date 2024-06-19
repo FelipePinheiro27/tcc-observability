@@ -17,6 +17,7 @@ import java.util.List;
 public class ObservabilityController {
     @Autowired
     private MetricDataService metricDataService;
+    @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("/system-info")
     public GeneralMetrics getSystemInfo() {
         return metricDataService.getSystemMetrics();
@@ -28,6 +29,7 @@ public class ObservabilityController {
         return metricDataService.getAllMetrics();
     }
 
+    @CrossOrigin(origins = "http://localhost:3000")
     @GetMapping("prometheus-metrics")
     public PrometheusMetrics getPrometheusMetrics() {
         return metricDataService.getPrometheusMetric();

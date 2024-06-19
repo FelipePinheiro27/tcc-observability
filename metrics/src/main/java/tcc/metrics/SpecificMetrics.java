@@ -5,30 +5,36 @@ import lombok.Data;
 @Data
 public class SpecificMetrics {
     private double maxResponseTime;
-    private double maxCpuStorage;
+    private double maxCpuUsage;
     private double maxMemoryUsage;
     private double minResponseTime;
-    private double minCpuStorage;
+    private double minCpuUsage;
     private double minMemoryUsage;
-    private double medianReponseTime;
     private String spanMaxResponseTime;
-    private String spanMaxCpuStorage;
+    private String spanMaxCpuUsage;
     private String spanMaxMemoryUsage;
     private String spanMinResponseTime;
-    private String spanMinCpuStorage;
+    private String spanMinCpuUsage;
     private String spanMinMemoryUsage;
     private int responseTimeOverflows;
-    private int cpuStorageOverflows;
+    private int cpuUsageOverflows;
     private int memoryUsageOverflows;
     private int allOverflows;
+    private double expectedCpuUsage;
+    private double expectedMemoryUsage;
+    private double expectedResponseTime;
+    private double averageCpuUsage;
+    private double averageMemoryUsage;
+    private double averageResponseTime;
+
 
     public double getMaxResponseTime() { return maxResponseTime; }
 
     public void setMaxResponseTime(double maxResponseTime) { this.maxResponseTime = maxResponseTime; }
 
-    public double getMaxCpuStorage() { return maxCpuStorage; }
+    public double getMaxCpuUsage() { return maxCpuUsage; }
 
-    public void setMaxCpuStorage(double maxCpuStorage) { this.maxCpuStorage = maxCpuStorage; }
+    public void setMaxCpuUsage(double maxCpuUsage) { this.maxCpuUsage = maxCpuUsage; }
 
     public double getMaxMemoryUsage() { return maxMemoryUsage; }
 
@@ -38,9 +44,9 @@ public class SpecificMetrics {
 
     public void setMinResponseTime(double minResponseTime) { this.minResponseTime = minResponseTime; }
 
-    public double getMinCpuStorage() { return minCpuStorage; }
+    public double getMinCpuUsage() { return minCpuUsage; }
 
-    public void setMinCpuStorage(double minCpuStorage) { this.minCpuStorage = minCpuStorage; }
+    public void setMinCpuUsage(double minCpuUsage) { this.minCpuUsage = minCpuUsage; }
 
     public double getMinMemoryUsage() { return minMemoryUsage; }
 
@@ -50,9 +56,9 @@ public class SpecificMetrics {
 
     public void setSpanMaxResponseTime(String spanMaxResponseTime) { this.spanMaxResponseTime = spanMaxResponseTime; }
 
-    public String getSpanMaxCpuStorage() { return spanMaxCpuStorage; }
+    public String getSpanMaxCpuUsage() { return spanMaxCpuUsage; }
 
-    public void setSpanMaxCpuStorage(String spanMaxCpuStorage) { this.spanMaxCpuStorage = spanMaxCpuStorage; }
+    public void setSpanMaxCpuUsage(String spanMaxCpuUsage) { this.spanMaxCpuUsage = spanMaxCpuUsage; }
 
     public String getSpanMaxMemoryUsage() { return spanMaxMemoryUsage; }
 
@@ -62,25 +68,21 @@ public class SpecificMetrics {
 
     public void setSpanMinResponseTime(String spanMinResponseTime) { this.spanMinResponseTime = spanMinResponseTime; }
 
-    public String getSpanMinCpuStorage() { return spanMinCpuStorage; }
+    public String getSpanMinCpuUsage() { return spanMinCpuUsage; }
 
-    public void setSpanMinCpuStorage(String spanMinCpuStorage) { this.spanMinCpuStorage = spanMinCpuStorage; }
+    public void setSpanMinCpuUsage(String spanMinCpuUsage) { this.spanMinCpuUsage = spanMinCpuUsage; }
 
     public String getSpanMinMemoryUsage() { return spanMinMemoryUsage; }
 
     public void setSpanMinMemoryUsage(String spanMinMemoryUsage) { this.spanMinMemoryUsage = spanMinMemoryUsage; }
 
-    public double getMedianReponseTime() { return medianReponseTime; }
-
-    public void setMedianReponseTime(double medianReponseTime) { this.medianReponseTime = medianReponseTime; }
-
     public int getResponseTimeOverflows() { return responseTimeOverflows; }
 
     public void setResponseTimeOverflows(int responseTimeOverflows) { this.responseTimeOverflows = responseTimeOverflows; }
 
-    public int getCpuStorageOverflows() { return cpuStorageOverflows; }
+    public int getCpuUsageOverflows() { return cpuUsageOverflows; }
 
-    public void setCpuStorageOverflows(int cpuStorageOverflows) { this.cpuStorageOverflows = cpuStorageOverflows; }
+    public void setCpuUsageOverflows(int cpuUsageOverflows) { this.cpuUsageOverflows = cpuUsageOverflows; }
 
     public int getMemoryUsageOverflows() { return memoryUsageOverflows; }
 
@@ -89,5 +91,29 @@ public class SpecificMetrics {
     public int getAllOverflows() { return allOverflows; }
 
     public void setAllOverflows(int allOverflows) { this.allOverflows = allOverflows; }
+
+    public double getAverageCpuUsage() { return averageCpuUsage; }
+
+    public void setAverageCpuUsage(double averageCpuUsage) { this.averageCpuUsage = averageCpuUsage; }
+
+    public double getAverageMemoryUsage() { return averageMemoryUsage; }
+
+    public void setAverageMemoryUsage(double averageMemoryUsage) { this.averageMemoryUsage = averageMemoryUsage; }
+
+    public double getAverageResponseTime() { return averageResponseTime; }
+
+    public void setAverageResponseTime(double averageResponseTime) { this.averageResponseTime = averageResponseTime; }
+
+    public double getExpectedCpuUsage() { return expectedCpuUsage; }
+
+    public void setExpectedCpuUsage(double expectedCpuUsage) { this.expectedCpuUsage = expectedCpuUsage; }
+
+    public double getExpectedMemoryUsage() { return expectedMemoryUsage; }
+
+    public void setExpectedMemoryUsage(double expectedMemoryUsage) { this.expectedMemoryUsage = expectedMemoryUsage; }
+
+    public double getExpectedResponseTime() { return expectedResponseTime; }
+
+    public void setExpectedResponseTime(double expectedResponseTime) { this.expectedResponseTime = expectedResponseTime; }
 
 }

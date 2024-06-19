@@ -48,6 +48,18 @@ public class MetricDataServiceImpl implements MetricDataService {
         return new JSONArray();
     }
 
+    private String generateSimpleID(String input) {
+        input = input.trim().toLowerCase();
+
+        input = input.replaceAll("[^a-zA-Z0-9]", "-");
+
+        input = input.replaceAll("-+", "-");
+
+        input = input.replaceAll("^-|-$", "");
+
+        return input;
+    }
+
     private double parseAndRound(String value) {
         try {
             BigDecimal bd = new BigDecimal(value);
@@ -75,10 +87,11 @@ public class MetricDataServiceImpl implements MetricDataService {
                 long startTime = span.getLong("startTime") / 1000;
                 boolean isLastFiveMin = startTime >= startTimeMillis && startTime <= currentTimeMillis;
                 boolean isObservabilitySpan = false;
-                long responseTimeReceived = span.getLong("duration");
-                double cpuStorageReceived = 0, cpuStorageExpected = 0;
+                double responseTimeReceived = ((double) span.getLong("duration") / (1000 * 1000));
+                double cpuUsageReceived = 0, cpuUsageExpected = 0;
                 int statusCodeReceived = 0;
-                long memoryUsageReceived = 0, memoryUsageExpected = 0, responseTimeExpected = 0;
+                long memoryUsageReceived = 0, memoryUsageExpected = 0;
+                double responseTimeExpected = 0;
                 String currentServiceName = null, routeName = null;
 
                 for (int k = 0; k < tags.length(); k++) {
@@ -88,13 +101,13 @@ public class MetricDataServiceImpl implements MetricDataService {
                             statusCodeReceived = tag.getInt("value");
                             break;
                         case "responseTime":
-                            responseTimeExpected = tag.getLong("value");
+                            responseTimeExpected = tag.getDouble("value");
                             break;
-                        case "cpuStorage":
-                            cpuStorageExpected = parseAndRound(tag.getString("value"));
+                        case "cpuUsage":
+                            cpuUsageExpected = parseAndRound(tag.getString("value"));
                             break;
                         case "cpuUsageReceived":
-                            cpuStorageReceived = tag.getDouble("value");
+                            cpuUsageReceived = tag.getDouble("value");
                             break;
                         case "memory":
                             memoryUsageExpected = tag.getLong("value");
@@ -113,16 +126,16 @@ public class MetricDataServiceImpl implements MetricDataService {
                             break;
                     }
                 }
-            if (isObservabilitySpan) {
-                String allServiceName = currentServiceName + ": " + routeName;
-                ServiceMetrics serviceMetrics = serviceMetricsMap.computeIfAbsent(allServiceName, k -> new ServiceMetrics());
+                if (isObservabilitySpan) {
+                    String allServiceName = currentServiceName + ": " + routeName;
+                    ServiceMetrics serviceMetrics = serviceMetricsMap.computeIfAbsent(allServiceName, k -> new ServiceMetrics());
 
                     if (isLastFiveMin) {
                         serviceMetrics.incrementRequestCountBySecond();
                     }
-                    if (cpuStorageReceived > cpuStorageExpected) {
+                    if (cpuUsageReceived > cpuUsageExpected) {
                         serviceMetrics.incrementAllOverflows();
-                        serviceMetrics.incrementCpuStorageOverflows();
+                        serviceMetrics.incrementCpuUsageOverflows();
                     }
                     if (memoryUsageReceived > memoryUsageExpected) {
                         serviceMetrics.incrementAllOverflows();
@@ -135,14 +148,20 @@ public class MetricDataServiceImpl implements MetricDataService {
                     if (statusCodeReceived >= 400)
                         serviceMetrics.incrementQttErrors();
 
-                    serviceMetrics.updateMaxCpuStorage(cpuStorageReceived, spanID);
-                    serviceMetrics.updateMinCpuStorage(cpuStorageReceived, spanID);
+                    serviceMetrics.updateMaxCpuUsage(cpuUsageReceived, spanID);
+                    serviceMetrics.updateMinCpuUsage(cpuUsageReceived, spanID);
                     serviceMetrics.updateMaxMemoryUsage(memoryUsageReceived, spanID);
                     serviceMetrics.updateMinMemoryUsage(memoryUsageReceived, spanID);
                     serviceMetrics.addServiceTimeTotal(responseTimeReceived);
                     serviceMetrics.updateMaxServiceTime(responseTimeReceived, spanID);
                     serviceMetrics.updateMinServiceTime(responseTimeReceived, spanID);
                     serviceMetrics.incrementQttRequests();
+                    serviceMetrics.addTotalCpuUsage(cpuUsageReceived);
+                    serviceMetrics.addTotalMemoryUsage(memoryUsageReceived);
+                    serviceMetrics.addTotalResponseTime(responseTimeReceived);
+                    serviceMetrics.addExpectedCpuUsage(cpuUsageExpected);
+                    serviceMetrics.addExpectedMemoryUsage(memoryUsageExpected);
+                    serviceMetrics.addExpectedResponsTime(responseTimeExpected);
                 }
             }
         }
@@ -150,6 +169,7 @@ public class MetricDataServiceImpl implements MetricDataService {
         List<AllMetrics> allMetricsList = new ArrayList<>();
         for (Map.Entry<String, ServiceMetrics> entry : serviceMetricsMap.entrySet()) {
             String serviceName = entry.getKey();
+            String id = generateSimpleID(serviceName);
             ServiceMetrics serviceMetrics = entry.getValue();
 
             GeneralMetrics generalMetrics = new GeneralMetrics();
@@ -159,16 +179,15 @@ public class MetricDataServiceImpl implements MetricDataService {
             generalMetrics.setRequestsQtt(serviceMetrics.getQttRequests());
             generalMetrics.setRequestsBySecond((double) serviceMetrics.getRequestCountBySecond() / 60);
 
-            specificMetrics.setMedianReponseTime(serviceMetrics.getServiceTimeTotal() / serviceMetrics.getQttRequests());
             specificMetrics.setMaxResponseTime(serviceMetrics.getMaxServiceTime());
             specificMetrics.setMinResponseTime(serviceMetrics.getMinServiceTime());
             specificMetrics.setSpanMaxResponseTime(serviceMetrics.getMaxServiceTimeSpanId());
             specificMetrics.setSpanMinResponseTime(serviceMetrics.getMinServiceTimeSpanId());
 
-            specificMetrics.setMaxCpuStorage(serviceMetrics.getMaxCpuStorage());
-            specificMetrics.setMinCpuStorage(serviceMetrics.getMinCpuStorage());
-            specificMetrics.setSpanMaxCpuStorage(serviceMetrics.getMaxCpuStorageSpanId());
-            specificMetrics.setSpanMinCpuStorage(serviceMetrics.getMinCpuStorageSpanId());
+            specificMetrics.setMaxCpuUsage(serviceMetrics.getMaxCpuUsage());
+            specificMetrics.setMinCpuUsage(serviceMetrics.getMinCpuUsage());
+            specificMetrics.setSpanMaxCpuUsage(serviceMetrics.getMaxCpuUsageSpanId());
+            specificMetrics.setSpanMinCpuUsage(serviceMetrics.getMinCpuUsageSpanId());
 
             specificMetrics.setMaxMemoryUsage(serviceMetrics.getMaxMemoryUsage());
             specificMetrics.setMinMemoryUsage(serviceMetrics.getMinMemoryUsage());
@@ -176,11 +195,17 @@ public class MetricDataServiceImpl implements MetricDataService {
             specificMetrics.setSpanMinMemoryUsage(serviceMetrics.getMinMemoryUsageSpanId());
 
             specificMetrics.setResponseTimeOverflows(serviceMetrics.getResponseTimeOverflows());
-            specificMetrics.setCpuStorageOverflows(serviceMetrics.getCpuStorageOverflows());
+            specificMetrics.setCpuUsageOverflows(serviceMetrics.getCpuUsageOverflows());
             specificMetrics.setMemoryUsageOverflows(serviceMetrics.getMemoryUsageOverflows());
             specificMetrics.setAllOverflows(serviceMetrics.getAllOverflows());
+            specificMetrics.setExpectedCpuUsage(serviceMetrics.getExpectedCpuUsage());
+            specificMetrics.setExpectedMemoryUsage(serviceMetrics.getExpectedMemoryUsage());
+            specificMetrics.setExpectedResponseTime(serviceMetrics.getExpectedResponseTime());
+            specificMetrics.setAverageCpuUsage(serviceMetrics.getTotalCpuUsage() / serviceMetrics.getQttRequests());
+            specificMetrics.setAverageMemoryUsage(serviceMetrics.getTotalMemoryUsage() / serviceMetrics.getQttRequests());
+            specificMetrics.setAverageResponseTime(serviceMetrics.getTotalResponseTime() / serviceMetrics.getQttRequests());
 
-            allMetricsList.add(new AllMetrics(generalMetrics, specificMetrics, serviceName));
+            allMetricsList.add(new AllMetrics(generalMetrics, specificMetrics, serviceName, id));
         }
 
         return allMetricsList;
