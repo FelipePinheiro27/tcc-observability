@@ -11,7 +11,6 @@ export const getRiskByMetrics = (metrics?: ServiceMetrics) => {
     const memoryRange = expectedMemoryUsage !== 0 ? (averageMemoryUsage / expectedMemoryUsage) * 100 : -1;
     const responseTimeRange = expectedResponseTime !== 0 ? (averageResponseTime / expectedResponseTime) * 100 : -1;
 
-    console.log(cpuRange, memoryRange, responseTimeRange)
     if(cpuRange >= 100 || memoryRange >= 100 || responseTimeRange >= 100)
      return 'high';
     if(cpuRange >= 80 || memoryRange >= 80 || responseTimeRange >= 80)
@@ -19,3 +18,17 @@ export const getRiskByMetrics = (metrics?: ServiceMetrics) => {
 
     return 'low'
 }
+
+export const getRiskByMetricAttributes = (expectedValue?: number, receivedValue?: number): "low" | "medium" | "high" | null => {
+    if(!expectedValue || !receivedValue)
+    return null;
+
+    const range = (receivedValue / expectedValue) * 100
+
+    if(range >= 100)
+     return 'high';
+    if(range >= 80 )
+     return 'medium';
+
+    return 'low'
+} 

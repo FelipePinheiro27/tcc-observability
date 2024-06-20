@@ -2,7 +2,7 @@ import { useState } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
-import GeneralnfoTable from "../generalnfoTable/GeneralnfoTable";
+import MetricInfoTable from "../metricInfoTable/MetricInfoTable";
 
 const colorByRisk = {
   low: "rgba(21, 81, 237, 0.7)",
@@ -10,8 +10,30 @@ const colorByRisk = {
   high: "rgba(255, 19, 19, 0.7)",
 };
 
-const StatusCircle = () => {
+interface IStatusCircle {
+  metricName: string;
+  risk: "low" | "medium" | "high" | null;
+  max: string;
+  maxSpanId: string;
+  min: string;
+  minSpanId: string;
+  median: string;
+  overflows: number;
+}
+
+const StatusCircle = ({
+  risk,
+  metricName,
+  max,
+  maxSpanId,
+  min,
+  minSpanId,
+  median,
+  overflows,
+}: IStatusCircle) => {
   const [open, setOpen] = useState(false);
+
+  if (!risk) return <></>;
 
   return (
     <>
@@ -19,7 +41,7 @@ const StatusCircle = () => {
         className="StatusCircle"
         onMouseEnter={() => setOpen(true)}
         style={{
-          backgroundColor: colorByRisk["low"],
+          backgroundColor: colorByRisk[risk],
           width: 16,
           height: 16,
           borderRadius: "50%",
@@ -42,15 +64,19 @@ const StatusCircle = () => {
           style={{ cursor: "move", backgroundColor: "#ececec" }}
           id="draggable-dialog-title"
         >
-          Response Time
+          {metricName}
         </DialogTitle>
         <DialogContent style={{ backgroundColor: "#ececec" }}>
-          <GeneralnfoTable
+          <MetricInfoTable
             rows={[
-              { description: "Requests", value: "20" },
-              { description: "Errors", value: "1" },
-              { description: "Response Time Median", value: "183.10ms" },
-              { description: "Throughput Median", value: "102133" },
+              { description: "Max", value: max, spanId: maxSpanId },
+              { description: "Min", value: min, spanId: minSpanId },
+              { description: "Median", value: median, spanId: "" },
+              {
+                description: "Quantity Overflows",
+                value: String(overflows),
+                spanId: "",
+              },
             ]}
           />
         </DialogContent>

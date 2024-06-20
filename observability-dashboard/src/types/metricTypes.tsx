@@ -6,19 +6,19 @@ interface GeneralMetrics {
 
 interface SpecificMetrics {
   maxResponseTime: number;
-  maxCpuStorage: number;
+  maxCpuUsage: number;
   maxMemoryUsage: number;
   minResponseTime: number;
-  minCpuStorage: number;
+  minCpuUsage: number;
   minMemoryUsage: number;
   spanMaxResponseTime: string;
-  spanMaxCpuStorage: string;
+  spanMaxCpuUsage: string;
   spanMaxMemoryUsage: string;
   spanMinResponseTime: string;
-  spanMinCpuStorage: string;
+  spanMinCpuUsage: string;
   spanMinMemoryUsage: string;
   responseTimeOverflows: number;
-  cpuStorageOverflows: number;
+  cpuUsageOverflows: number;
   memoryUsageOverflows: number;
   allOverflows: number;
   expectedCpuUsage: number;

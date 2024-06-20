@@ -5,13 +5,13 @@ import TableRow from "@mui/material/TableRow";
 import Paper from "@mui/material/Paper";
 import { StyledTableCell, StyledTableRow } from "../table/TableData";
 
-type dataType = { description: string; value: string };
+type dataType = { description: string; value: string; spanId: string };
 
-interface IGeneralnfoTable {
+interface IMetricInfoTable {
   rows: dataType[];
 }
 
-const GeneralnfoTable = ({ rows }: IGeneralnfoTable) => {
+const MetricInfoTable = ({ rows }: IMetricInfoTable) => {
   return (
     <TableContainer component={Paper}>
       <Table sx={{ minWidth: 700 }} aria-label="customized table">
@@ -19,6 +19,7 @@ const GeneralnfoTable = ({ rows }: IGeneralnfoTable) => {
           <TableRow sx={{ height: "10px" }}>
             <StyledTableCell>Description</StyledTableCell>
             <StyledTableCell align="left">Value</StyledTableCell>
+            <StyledTableCell align="left">SpanId</StyledTableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -28,6 +29,7 @@ const GeneralnfoTable = ({ rows }: IGeneralnfoTable) => {
                 {row.description}
               </StyledTableCell>
               <StyledTableCell align="left">{row.value}</StyledTableCell>
+              <StyledTableCell align="left">{row.spanId}</StyledTableCell>
             </StyledTableRow>
           ))}
         </TableBody>
@@ -36,4 +38,4 @@ const GeneralnfoTable = ({ rows }: IGeneralnfoTable) => {
   );
 };
 
-export default GeneralnfoTable;
+export default MetricInfoTable;
