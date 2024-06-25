@@ -2,12 +2,12 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SelectPriority from "../select/SelectPriority";
 import ServiceContent from "../serviceContent/ServiceContent";
-import { ServiceMetrics } from "../../types/metricTypes";
-import "./ServicesInfo.scss";
+import { serviceMetricsTypes } from "../../types/metricTypes";
 import { getRiskByMetrics } from "../../utils/serviceUtils";
+import "./ServicesInfo.scss";
 
 interface IServicesInfo {
-  allMetrics: ServiceMetrics[];
+  allMetrics: serviceMetricsTypes[];
 }
 
 const ServicesInfo = ({ allMetrics }: IServicesInfo) => {

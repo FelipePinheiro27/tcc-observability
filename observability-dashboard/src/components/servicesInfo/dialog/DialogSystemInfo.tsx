@@ -1,9 +1,9 @@
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
-import "./DialogSystemInfo.scss";
 import { useEffect, useState } from "react";
-import { SystemInfo } from "../../../types/metricTypes";
+import { systemInfoTypes } from "../../../types/metricTypes";
 import { retrieveSystemInfo } from "../../../api/metricAPI";
+import "./DialogSystemInfo.scss";
 
 interface IDialogSystemInfo {
   open: boolean;
@@ -11,7 +11,9 @@ interface IDialogSystemInfo {
 }
 
 const DialogSystemInfo = ({ open, setOpen }: IDialogSystemInfo) => {
-  const [systemInfo, setSystemInfo] = useState<SystemInfo>({} as SystemInfo);
+  const [systemInfo, setSystemInfo] = useState<systemInfoTypes>(
+    {} as systemInfoTypes
+  );
 
   useEffect(() => {
     const getSystemInfo = async () => {
@@ -55,8 +57,9 @@ const DialogSystemInfo = ({ open, setOpen }: IDialogSystemInfo) => {
           </div>
           <div>
             <strong>Errors Percentage: </strong>{" "}
-            {Math.round((systemInfo.errorsQtt / systemInfo.requestsQtt) * 100) /
-              100}
+            {Number(
+              (systemInfo.errorsQtt / systemInfo.requestsQtt).toFixed(1)
+            ) * 100}
             %
           </div>
         </div>

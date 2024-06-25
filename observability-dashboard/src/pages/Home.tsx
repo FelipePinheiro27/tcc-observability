@@ -1,18 +1,22 @@
 import Header from "../components/header/Header";
 import HomeMetrics from "../components/homeMetrics/HomeMetrics";
 import ServicesInfo from "../components/servicesInfo/ServicesInfo";
-import { ServiceMetrics } from "../types/metricTypes";
+import {
+  prometheusMetricsTypes,
+  serviceMetricsTypes,
+} from "../types/metricTypes";
 
 interface IHome {
-  allMetrics: ServiceMetrics[];
+  allMetrics: serviceMetricsTypes[];
+  prometheusMetricsValue: prometheusMetricsTypes | null;
 }
 
-const Home = ({ allMetrics }: IHome) => {
+const Home = ({ allMetrics, prometheusMetricsValue }: IHome) => {
   return (
     <>
       <Header homePage />
       <div style={{ marginLeft: 45, marginRight: 45 }}>
-        <HomeMetrics />
+        <HomeMetrics prometheusMetricsValue={prometheusMetricsValue} />
         <ServicesInfo allMetrics={allMetrics} />
       </div>
     </>

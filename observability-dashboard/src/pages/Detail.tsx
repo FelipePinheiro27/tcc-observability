@@ -1,11 +1,11 @@
 import { useParams } from "react-router";
 import DetailedInformation from "../components/detailedInformation/DetailedInformation";
 import Header from "../components/header/Header";
-import { ServiceMetrics } from "../types/metricTypes";
+import { serviceMetricsTypes } from "../types/metricTypes";
 import { hasLength } from "../utils/serviceUtils";
 
 interface IDetail {
-  allMetrics: ServiceMetrics[];
+  allMetrics: serviceMetricsTypes[];
 }
 
 const Detail = ({ allMetrics }: IDetail) => {

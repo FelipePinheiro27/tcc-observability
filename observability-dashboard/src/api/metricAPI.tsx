@@ -1,9 +1,13 @@
 import axios from "axios";
-import { ServiceMetrics, SystemInfo } from "../types/metricTypes";
+import {
+  prometheusMetricsTypes,
+  serviceMetricsTypes,
+  systemInfoTypes,
+} from "../types/metricTypes";
 
-export const retrieveAllMetrics = async (): Promise<ServiceMetrics[]> => {
+export const retrieveAllMetrics = async (): Promise<serviceMetricsTypes[]> => {
   try {
-    const response = await axios.get<ServiceMetrics[]>(
+    const response = await axios.get<serviceMetricsTypes[]>(
       "http://localhost:8081/api/metrics/all"
     );
     return response.data;
@@ -13,9 +17,9 @@ export const retrieveAllMetrics = async (): Promise<ServiceMetrics[]> => {
   }
 };
 
-export const retrieveSystemInfo = async (): Promise<SystemInfo> => {
+export const retrieveSystemInfo = async (): Promise<systemInfoTypes> => {
   try {
-    const response = await axios.get<SystemInfo>(
+    const response = await axios.get<systemInfoTypes>(
       "http://localhost:8081/api/metrics/system-info"
     );
 
@@ -25,3 +29,17 @@ export const retrieveSystemInfo = async (): Promise<SystemInfo> => {
     throw error;
   }
 };
+
+export const retrievePrometheusMetrics =
+  async (): Promise<prometheusMetricsTypes> => {
+    try {
+      const response = await axios.get<prometheusMetricsTypes>(
+        "http://localhost:8081/api/metrics/prometheus-metrics"
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error(error);
+      throw error;
+    }
+  };

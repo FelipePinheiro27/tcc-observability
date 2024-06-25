@@ -1,4 +1,4 @@
-import { ServiceMetrics } from "../../types/metricTypes";
+import { serviceMetricsTypes } from "../../types/metricTypes";
 import {
   getRiskByMetricAttributes,
   getRiskByMetrics,
@@ -15,7 +15,7 @@ const colorByRisk = {
 };
 
 interface IDetailedInformation {
-  serviceMetrics?: ServiceMetrics;
+  serviceMetrics?: serviceMetricsTypes;
 }
 
 const DetailedInformation = ({ serviceMetrics }: IDetailedInformation) => {
@@ -68,7 +68,7 @@ const DetailedInformation = ({ serviceMetrics }: IDetailedInformation) => {
               { description: "Errors", value: String(errorsQtt) },
               {
                 description: "Response Time Median",
-                value: `${averageResponseTime}s`,
+                value: `${averageResponseTime?.toFixed(1)}s`,
               },
             ]}
           />
@@ -80,8 +80,8 @@ const DetailedInformation = ({ serviceMetrics }: IDetailedInformation) => {
             rows={[
               {
                 description: "Response Time",
-                expected: `${expectedResponseTime}s`,
-                received: `${averageResponseTime}s`,
+                expected: `${expectedResponseTime?.toFixed(1)}s`,
+                received: `${averageResponseTime?.toFixed(1)}s`,
                 status: (
                   <StatusCircle
                     metricName="Response Time"
@@ -89,19 +89,19 @@ const DetailedInformation = ({ serviceMetrics }: IDetailedInformation) => {
                       expectedResponseTime,
                       averageResponseTime
                     )}
-                    max={`${maxResponseTime} seconds`}
+                    max={`${maxResponseTime?.toFixed(1)} seconds`}
                     maxSpanId={spanMaxResponseTime || ""}
-                    min={`${minResponseTime} seconds`}
+                    min={`${minResponseTime?.toFixed(1)} seconds`}
                     minSpanId={spanMinResponseTime || ""}
-                    median={`${averageResponseTime} seconds`}
+                    median={`${averageResponseTime?.toFixed(1)} seconds`}
                     overflows={responseTimeOverflows || 0}
                   />
                 ),
               },
               {
                 description: "Memory Usage",
-                expected: String(expectedMemoryUsage),
-                received: String(averageMemoryUsage),
+                expected: `${expectedMemoryUsage} bytes`,
+                received: `${averageMemoryUsage} bytes`,
                 status: (
                   <StatusCircle
                     metricName="Memory Usage"
@@ -120,8 +120,8 @@ const DetailedInformation = ({ serviceMetrics }: IDetailedInformation) => {
               },
               {
                 description: "Cpu Usage",
-                expected: String(expectedCpuUsage),
-                received: String(averageCpuUsage),
+                expected: `${expectedCpuUsage?.toFixed(1)}%`,
+                received: `${averageCpuUsage?.toFixed(1)}%`,
                 status: (
                   <StatusCircle
                     metricName="Cpu Usage"
@@ -129,11 +129,11 @@ const DetailedInformation = ({ serviceMetrics }: IDetailedInformation) => {
                       expectedCpuUsage,
                       averageCpuUsage
                     )}
-                    max={String(maxCpuUsage)}
+                    max={String(maxCpuUsage?.toFixed(1))}
                     maxSpanId={spanMaxCpuUsage || ""}
-                    min={String(minCpuUsage)}
+                    min={String(minCpuUsage?.toFixed(1))}
                     minSpanId={spanMinCpuUsage || ""}
-                    median={String(averageCpuUsage)}
+                    median={String(averageCpuUsage?.toFixed(1))}
                     overflows={cpuUsageOverflows || 0}
                   />
                 ),

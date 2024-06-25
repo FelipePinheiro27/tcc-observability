@@ -1,10 +1,10 @@
-interface GeneralMetrics {
+interface generalMetricsTypes {
   requestsQtt: number;
   errorsQtt: number;
   requestsBySecond: number;
 }
 
-interface SpecificMetrics {
+interface specificMetricsTypes {
   maxResponseTime: number;
   maxCpuUsage: number;
   maxMemoryUsage: number;
@@ -29,15 +29,21 @@ interface SpecificMetrics {
   averageResponseTime: number;
 }
 
-export interface ServiceMetrics {
-  generalMetrics: GeneralMetrics;
-  specificMetrics: SpecificMetrics;
+export interface serviceMetricsTypes {
+  generalMetrics: generalMetricsTypes;
+  specificMetrics: specificMetricsTypes;
   serviceName: string;
   id: string;
 }
 
-export interface SystemInfo {
+export interface systemInfoTypes {
   requestsBySecond: number;
   requestsQtt: number;
   errorsQtt: number;
+}
+
+export interface prometheusMetricsTypes {
+  cpuUsage: number;
+  memory: number;
+  throughput: number;
 }

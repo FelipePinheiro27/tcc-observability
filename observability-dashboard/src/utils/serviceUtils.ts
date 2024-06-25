@@ -1,8 +1,8 @@
-import { ServiceMetrics } from "../types/metricTypes";
+import { serviceMetricsTypes } from "../types/metricTypes";
 
 export const hasLength = (data: unknown[]) => data.length > 0;
 
-export const getRiskByMetrics = (metrics?: ServiceMetrics) => {
+export const getRiskByMetrics = (metrics?: serviceMetricsTypes) => {
     if(!metrics)
         return;
     const {specificMetrics} = metrics;
