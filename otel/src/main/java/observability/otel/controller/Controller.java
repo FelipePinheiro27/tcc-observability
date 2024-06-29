@@ -2,15 +2,20 @@ package observability.otel.controller;
 
 import observability.otel.annotation.ObservabilityParam;
 import observability.otel.annotation.Param;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+
 import java.util.ArrayList;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api")
 public class Controller {
+    @Autowired
+    private RestTemplate restTemplate;
     @GetMapping("/testGet/{name}")
     @ResponseStatus(HttpStatus.OK)
     @ObservabilityParam(params = {
@@ -31,7 +36,7 @@ public class Controller {
     @ObservabilityParam(params = {
             @Param(key = "cpuStorage", value = "10"),
             @Param(key = "memory", value = "20"),
-            @Param(key = "responseTime", value = "55")
+            @Param(key = "responseTime", value = "1")
     })
     public String testando() {
         List<LargeObject> largeObjectList = new ArrayList<>();
@@ -70,9 +75,9 @@ public class Controller {
     @GetMapping("/large-metrica")
     @ResponseStatus(HttpStatus.OK)
     @ObservabilityParam(params = {
-            @Param(key = "cpuStorage", value = "10"),
-            @Param(key = "memory", value = "20"),
-            @Param(key = "responseTime", value = "55")
+            @Param(key = "cpuUsage", value = "10"),
+            @Param(key = "memory", value = "660901888"),
+            @Param(key = "responseTime", value = "6")
     })
     public String metricaLarge() throws InterruptedException {
         List<LargeObject> largeObjectList = new ArrayList<>();

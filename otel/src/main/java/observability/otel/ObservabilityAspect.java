@@ -48,13 +48,13 @@ public class ObservabilityAspect {
         Object proceed = joinPoint.proceed();
 
         Span.current().setAttribute("serviceName", methodName.getName());
-        Span.current().setAttribute("isObservabilitySpan", true);
 
         return proceed;
     }
 
     @Before("@annotation(observability.otel.annotation.ObservabilityParam)")
     public void logBefore(JoinPoint joinPoint) {
+        Span.current().setAttribute("isObservabilitySpan", true);
         cpuUsageFirstValue = metric.getCpuUsage();
         networkTransferDataFirstValue = metric.getSumNetworkIo();
         memoryUsageFirstValue = metric.getMemoryUsage();
@@ -69,7 +69,7 @@ public class ObservabilityAspect {
         long memoryUsage = memoryUsageSecondValue - memoryUsageFirstValue;
         double cpuUsage = cpuUsageSecondValue - cpuUsageFirstValue;
 
-        Span.current().setAttribute("cpuUsageReceived", cpuUsage);
+        Span.current().setAttribute("cpuUsageReceived", cpuUsage * 100);
         Span.current().setAttribute("memoryUsageReceived", memoryUsage);
         Span.current().setAttribute("throughputReceived", throughput);
     }
