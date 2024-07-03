@@ -1,5 +1,6 @@
 import { serviceMetricsTypes } from "../../types/metricTypes";
 import {
+  bytesToMegaBytes,
   getRiskByMetricAttributes,
   getRiskByMetrics,
 } from "../../utils/serviceUtils";
@@ -100,20 +101,20 @@ const DetailedInformation = ({ serviceMetrics }: IDetailedInformation) => {
               },
               {
                 description: "Memory Usage",
-                expected: `${expectedMemoryUsage} bytes`,
-                received: `${averageMemoryUsage} bytes`,
+                expected: `${expectedMemoryUsage} MB`,
+                received: `${bytesToMegaBytes(averageMemoryUsage)} MB`,
                 status: (
                   <StatusCircle
                     metricName="Memory Usage"
                     risk={getRiskByMetricAttributes(
                       expectedMemoryUsage,
-                      averageMemoryUsage
+                      bytesToMegaBytes(averageMemoryUsage)
                     )}
-                    max={`${maxMemoryUsage} bytes`}
+                    max={`${bytesToMegaBytes(maxMemoryUsage)} MB`}
                     maxSpanId={spanMaxMemoryUsage || ""}
-                    min={`${minMemoryUsage} bytes`}
+                    min={`${bytesToMegaBytes(minMemoryUsage)} MB`}
                     minSpanId={spanMinMemoryUsage || ""}
-                    median={`${averageMemoryUsage} bytes`}
+                    median={`${bytesToMegaBytes(averageMemoryUsage)} MB`}
                     overflows={memoryUsageOverflows || 0}
                   />
                 ),

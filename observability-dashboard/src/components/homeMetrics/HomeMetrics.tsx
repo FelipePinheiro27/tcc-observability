@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import DialogSystemInfo from "../servicesInfo/dialog/DialogSystemInfo";
-import { retrievePrometheusMetrics } from "../../api/metricAPI";
 import { prometheusMetricsTypes } from "../../types/metricTypes";
+import { bytesToMegaBytes } from "../../utils/serviceUtils";
 import "./HomeMetrics.scss";
 
 interface IHomeMetrics {
@@ -12,6 +12,7 @@ interface IHomeMetrics {
 const HomeMetrics = ({ prometheusMetricsValue }: IHomeMetrics) => {
   const [open, setOpen] = useState(false);
   const { cpuUsage, memory, throughput } = prometheusMetricsValue || {};
+  const megaByteMemory = bytesToMegaBytes(memory);
 
   return (
     <>
@@ -20,8 +21,8 @@ const HomeMetrics = ({ prometheusMetricsValue }: IHomeMetrics) => {
           {prometheusMetricsValue && (
             <>
               <div>CPU: {cpuUsage}%</div>
-              <div>Memory Used: {memory} bytes</div>
-              <div>Throughput: {throughput}</div>
+              <div>Memory Used: {megaByteMemory} MB</div>
+              <div>Throughput: {throughput} Bytes</div>
             </>
           )}
         </div>

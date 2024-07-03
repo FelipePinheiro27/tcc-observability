@@ -32,3 +32,10 @@ export const getRiskByMetricAttributes = (expectedValue?: number, receivedValue?
 
     return 'low'
 } 
+
+export const bytesToMegaBytes = (value: number | undefined) => {
+    if(value)
+        return value / (1024 * 1024);
+    
+    return 0
+}
