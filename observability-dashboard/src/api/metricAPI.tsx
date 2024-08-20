@@ -8,7 +8,7 @@ import {
 export const retrieveAllMetrics = async (): Promise<serviceMetricsTypes[]> => {
   try {
     const response = await axios.get<serviceMetricsTypes[]>(
-      "http://localhost:8081/api/metrics/all"
+      "http://localhost:8084/api/metrics/all"
     );
     return response.data;
   } catch (error) {
@@ -20,7 +20,7 @@ export const retrieveAllMetrics = async (): Promise<serviceMetricsTypes[]> => {
 export const retrieveSystemInfo = async (): Promise<systemInfoTypes> => {
   try {
     const response = await axios.get<systemInfoTypes>(
-      "http://localhost:8081/api/metrics/system-info"
+      "http://localhost:8084/api/metrics/system-info"
     );
 
     return response.data;
@@ -34,7 +34,7 @@ export const retrievePrometheusMetrics =
   async (): Promise<prometheusMetricsTypes> => {
     try {
       const response = await axios.get<prometheusMetricsTypes>(
-        "http://localhost:8081/api/metrics/prometheus-metrics"
+        "http://localhost:8084/api/metrics/prometheus-metrics"
       );
 
       return response.data;

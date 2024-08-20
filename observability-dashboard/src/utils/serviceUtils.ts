@@ -19,9 +19,9 @@ export const getRiskByMetrics = (metrics?: serviceMetricsTypes) => {
     return 'low'
 }
 
-export const getRiskByMetricAttributes = (expectedValue?: number, receivedValue?: number): "low" | "medium" | "high" | null => {
+export const getRiskByMetricAttributes = (expectedValue?: number, receivedValue?: number): "low" | "medium" | "high" | "none" => {
     if(!expectedValue || !receivedValue)
-    return null;
+    return 'none';
 
     const range = (receivedValue / expectedValue) * 100
 
