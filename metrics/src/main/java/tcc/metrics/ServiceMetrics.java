@@ -8,6 +8,8 @@ public class ServiceMetrics {
     private double minCpuUsage = Double.MAX_VALUE;
     private double maxMemoryUsage = 0;
     private double minMemoryUsage = Double.MAX_VALUE;
+    private double maxThroughputUsage = 0;
+    private double minThroughputUsage = Double.MAX_VALUE;
     private int qttRequests = 0;
     private int qttErrors = 0;
     private int requestCountBySecond = 0;
@@ -15,18 +17,47 @@ public class ServiceMetrics {
     private int responseTimeOverflows = 0;
     private int cpuUsageOverflows = 0;
     private int memoryUsageOverflows = 0;
+    private int throughputOverFlows = 0;
     private String maxServiceTimeSpanId = "";
     private String minServiceTimeSpanId = "";
     private String maxCpuUsageSpanId = "";
     private String minCpuUsageSpanId = "";
     private String maxMemoryUsageSpanId = "";
     private String minMemoryUsageSpanId = "";
+    private String maxThroughputSpanId = "";
+    private String minThroughputSpanId = "";
     private double expectedCpuUsage = -1;
     private long expectedMemoryUsage = -1;
+    private long expectedThroughputUsage = -1;
     private double expectedResponseTime = -1;
     private double totalCpuUsage = 0;
     private double totalMemoryUsage = 0;
     private double totalResponseTime = 0;
+    private double totalThroughput = 0;
+
+    public long getExpectedThroughputUsage() {
+        return expectedThroughputUsage;
+    }
+
+    public String getMinThroughputSpanId() {
+        return minThroughputSpanId;
+    }
+
+    public String getMaxThroughputSpanId() {
+        return maxThroughputSpanId;
+    }
+
+    public int getThroughputOverFlows() {
+        return throughputOverFlows;
+    }
+
+    public double getMinThroughputUsage() {
+        return minThroughputUsage;
+    }
+
+    public double getMaxThroughputUsage() {
+        return maxThroughputUsage;
+    }
 
     public void incrementQttRequests() {
         this.qttRequests++;
@@ -54,6 +85,9 @@ public class ServiceMetrics {
 
     public void incrementMemoryUsageOverflows() {
         this.memoryUsageOverflows++;
+    }
+    public void incremenThroughputOberflows() {
+        this.throughputOverFlows++;
     }
 
     public void addServiceTimeTotal(double serviceTime) {
@@ -99,6 +133,20 @@ public class ServiceMetrics {
         if (memoryUsage < this.minMemoryUsage) {
             this.minMemoryUsage = memoryUsage;
             this.minMemoryUsageSpanId = spanId;
+        }
+    }
+
+    public void updateMaxThroughput(double throughput, String spanId) {
+        if (throughput > this.maxThroughputUsage) {
+            this.maxThroughputUsage = throughput;
+            this.maxThroughputSpanId = spanId;
+        }
+    }
+
+    public void updateMinThroughput(double throughput, String spanId) {
+        if (throughput < this.minThroughputUsage) {
+            this.minThroughputUsage = throughput;
+            this.minThroughputSpanId = spanId;
         }
     }
 
@@ -188,15 +236,24 @@ public class ServiceMetrics {
 
     public void addTotalResponseTime(double responseTime) { totalResponseTime += responseTime; }
 
+    public void addTotalThroughput(double throughput) { totalThroughput += throughput; }
+
     public double getTotalCpuUsage() { return totalCpuUsage; }
 
     public double getTotalMemoryUsage() { return totalMemoryUsage; }
 
     public double getTotalResponseTime() { return totalResponseTime; }
 
+    public double getTotalThroughput() { return totalThroughput; }
+
     public void addExpectedCpuUsage(double expectedCpuUsage) {
         if(this.expectedCpuUsage == -1)
             this.expectedCpuUsage = expectedCpuUsage;
+    }
+
+    public void addExpectedThroughput(long expectedThroughput) {
+        if(this.expectedThroughputUsage == -1)
+            this.expectedThroughputUsage = expectedThroughput;
     }
 
     public void addExpectedMemoryUsage(long expectedMemoryUsage) {

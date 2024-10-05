@@ -30,7 +30,7 @@ public class ObservabilityController {
     }
 
     @CrossOrigin(origins = "http://localhost:3000")
-    @GetMapping("prometheus-metrics")
+    @GetMapping("system-metrics")
     public PrometheusMetrics getPrometheusMetrics() {
         return metricDataService.getPrometheusMetric();
     }

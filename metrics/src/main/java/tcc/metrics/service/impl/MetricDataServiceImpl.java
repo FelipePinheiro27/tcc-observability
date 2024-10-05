@@ -82,7 +82,7 @@ public class MetricDataServiceImpl implements MetricDataService {
             JSONArray spans = trace.getJSONArray("spans");
             for (int j = 0; j < spans.length(); j++) {
                 JSONObject span = spans.getJSONObject(j);
-                String spanID = span.getString("spanID");
+                String spanID = span.getString("traceID");
                 JSONArray tags = span.getJSONArray("tags");
                 long startTime = span.getLong("startTime") / 1000;
                 boolean isLastFiveMin = startTime >= startTimeMillis && startTime <= currentTimeMillis;
@@ -90,7 +90,7 @@ public class MetricDataServiceImpl implements MetricDataService {
                 double responseTimeReceived = ((double) span.getLong("duration") / (1000 * 1000));
                 double cpuUsageReceived = 0, cpuUsageExpected = 0;
                 int statusCodeReceived = 0;
-                long memoryUsageReceived = 0, memoryUsageExpected = 0;
+                long memoryUsageReceived = 0, memoryUsageExpected = 0, throughput = 0, throughputReceived = 0;
                 double responseTimeExpected = 0;
                 String currentServiceName = null, routeName = null;
 
@@ -114,6 +114,11 @@ public class MetricDataServiceImpl implements MetricDataService {
                             break;
                         case "memoryUsageReceived":
                             memoryUsageReceived = tag.getLong("value");
+                            break;
+                        case "throughput":
+                            throughput = tag.getLong("value");
+                        case "throughputReceived":
+                            throughputReceived = tag.getLong("value");
                             break;
                         case "isObservabilitySpan":
                             isObservabilitySpan = tag.getBoolean("value");
@@ -141,6 +146,10 @@ public class MetricDataServiceImpl implements MetricDataService {
                         serviceMetrics.incrementAllOverflows();
                         serviceMetrics.incrementMemoryUsageOverflows();
                     }
+                    if (throughputReceived > throughput) {
+                        serviceMetrics.incrementAllOverflows();
+                        serviceMetrics.incremenThroughputOberflows();
+                    }
                     if (responseTimeReceived > responseTimeExpected) {
                         serviceMetrics.incrementAllOverflows();
                         serviceMetrics.incrementResponseTimeOverflows();
@@ -152,6 +161,8 @@ public class MetricDataServiceImpl implements MetricDataService {
                     serviceMetrics.updateMinCpuUsage(cpuUsageReceived, spanID);
                     serviceMetrics.updateMaxMemoryUsage(memoryUsageReceived, spanID);
                     serviceMetrics.updateMinMemoryUsage(memoryUsageReceived, spanID);
+                    serviceMetrics.updateMaxThroughput(throughputReceived, spanID);
+                    serviceMetrics.updateMinThroughput(throughputReceived, spanID);
                     serviceMetrics.addServiceTimeTotal(responseTimeReceived);
                     serviceMetrics.updateMaxServiceTime(responseTimeReceived, spanID);
                     serviceMetrics.updateMinServiceTime(responseTimeReceived, spanID);
@@ -159,6 +170,8 @@ public class MetricDataServiceImpl implements MetricDataService {
                     serviceMetrics.addTotalCpuUsage(cpuUsageReceived);
                     serviceMetrics.addTotalMemoryUsage(memoryUsageReceived);
                     serviceMetrics.addTotalResponseTime(responseTimeReceived);
+                    serviceMetrics.addTotalThroughput(throughputReceived);
+                    serviceMetrics.addExpectedThroughput(throughput);
                     serviceMetrics.addExpectedCpuUsage(cpuUsageExpected);
                     serviceMetrics.addExpectedMemoryUsage(memoryUsageExpected);
                     serviceMetrics.addExpectedResponsTime(responseTimeExpected);
@@ -194,13 +207,21 @@ public class MetricDataServiceImpl implements MetricDataService {
             specificMetrics.setSpanMaxMemoryUsage(serviceMetrics.getMaxMemoryUsageSpanId());
             specificMetrics.setSpanMinMemoryUsage(serviceMetrics.getMinMemoryUsageSpanId());
 
+            specificMetrics.setMaxThroughput(serviceMetrics.getMaxThroughputUsage());
+            specificMetrics.setMinMemoryUsage(serviceMetrics.getMinThroughputUsage());
+            specificMetrics.setSpanMaxMemoryUsage(serviceMetrics.getMaxThroughputSpanId());
+            specificMetrics.setSpanMinMemoryUsage(serviceMetrics.getMinThroughputSpanId());
+
             specificMetrics.setResponseTimeOverflows(serviceMetrics.getResponseTimeOverflows());
             specificMetrics.setCpuUsageOverflows(serviceMetrics.getCpuUsageOverflows());
             specificMetrics.setMemoryUsageOverflows(serviceMetrics.getMemoryUsageOverflows());
+            specificMetrics.setThroughputOverflows(serviceMetrics.getThroughputOverFlows());
             specificMetrics.setAllOverflows(serviceMetrics.getAllOverflows());
             specificMetrics.setExpectedCpuUsage(serviceMetrics.getExpectedCpuUsage());
             specificMetrics.setExpectedMemoryUsage(serviceMetrics.getExpectedMemoryUsage());
             specificMetrics.setExpectedResponseTime(serviceMetrics.getExpectedResponseTime());
+            specificMetrics.setExpectedThroughput(serviceMetrics.getExpectedThroughputUsage());
+            specificMetrics.setAverageThroughput(serviceMetrics.getTotalThroughput() / serviceMetrics.getQttRequests());
             specificMetrics.setAverageCpuUsage(serviceMetrics.getTotalCpuUsage() / serviceMetrics.getQttRequests());
             specificMetrics.setAverageMemoryUsage(serviceMetrics.getTotalMemoryUsage() / serviceMetrics.getQttRequests());
             specificMetrics.setAverageResponseTime(serviceMetrics.getTotalResponseTime() / serviceMetrics.getQttRequests());
