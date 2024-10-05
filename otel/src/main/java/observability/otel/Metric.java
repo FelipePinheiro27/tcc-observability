@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Metric {
-    private static final String PROMETHEUS_API_URL_QUERY = "http://172.17.0.1:9090/api/v1/query?query=";
+    private static final String PROMETHEUS_API_URL_QUERY = "http://172.17.0.1:9091/api/v1/query?query=";
 
     public JSONArray getPrometheusMetric(String prometheusUrl) {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
