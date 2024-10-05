@@ -19,7 +19,7 @@ const MetricInfoTable = ({ rows }: IMetricInfoTable) => {
           <TableRow sx={{ height: "10px" }}>
             <StyledTableCell>Description</StyledTableCell>
             <StyledTableCell align="left">Value</StyledTableCell>
-            <StyledTableCell align="left">SpanId</StyledTableCell>
+            <StyledTableCell align="left">Trace</StyledTableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -29,7 +29,15 @@ const MetricInfoTable = ({ rows }: IMetricInfoTable) => {
                 {row.description}
               </StyledTableCell>
               <StyledTableCell align="left">{row.value}</StyledTableCell>
-              <StyledTableCell align="left">{row.spanId}</StyledTableCell>
+              <StyledTableCell align="left">
+                {row.spanId ? (
+                  <a href={`http://localhost:16686/trace/${row.spanId}`}>
+                    Show Distributed Trace
+                  </a>
+                ) : (
+                  ""
+                )}
+              </StyledTableCell>
             </StyledTableRow>
           ))}
         </TableBody>

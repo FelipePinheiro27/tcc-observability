@@ -34,7 +34,7 @@ export const retrievePrometheusMetrics =
   async (): Promise<prometheusMetricsTypes> => {
     try {
       const response = await axios.get<prometheusMetricsTypes>(
-        "http://localhost:8084/api/metrics/prometheus-metrics"
+        "http://localhost:8084/api/metrics/system-metrics"
       );
 
       return response.data;

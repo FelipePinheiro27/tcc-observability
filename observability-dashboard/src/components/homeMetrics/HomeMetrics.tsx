@@ -21,7 +21,7 @@ const HomeMetrics = ({ prometheusMetricsValue }: IHomeMetrics) => {
           {prometheusMetricsValue && (
             <>
               <div style={{ fontSize: 14 }}>
-                <strong>Last 5 seconds:</strong>
+                <strong>Last 15 seconds:</strong>
               </div>
               <div>CPU: {(cpuUsage || 0).toFixed(1)}%</div>
               <div>Memory Used: {megaByteMemory.toFixed(1)} MB</div>

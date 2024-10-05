@@ -41,7 +41,7 @@ const Navigator = () => {
       }
     };
 
-    const intervalId = setInterval(fetchDataAndUpdate, 5000);
+    const intervalId = setInterval(fetchDataAndUpdate, 15000);
 
     return () => clearInterval(intervalId);
   }, []);

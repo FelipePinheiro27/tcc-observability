@@ -139,6 +139,26 @@ const DetailedInformation = ({ serviceMetrics }: IDetailedInformation) => {
                   />
                 ),
               },
+              {
+                description: "Throughput",
+                expected: `${expectedCpuUsage?.toFixed(1)}%`,
+                received: `${averageCpuUsage?.toFixed(1)}%`,
+                status: (
+                  <StatusCircle
+                    metricName="Throughput"
+                    risk={getRiskByMetricAttributes(
+                      expectedCpuUsage,
+                      averageCpuUsage
+                    )}
+                    max={String(maxCpuUsage?.toFixed(1))}
+                    maxSpanId={spanMaxCpuUsage || ""}
+                    min={String(minCpuUsage?.toFixed(1))}
+                    minSpanId={spanMinCpuUsage || ""}
+                    median={String(averageCpuUsage?.toFixed(1))}
+                    overflows={cpuUsageOverflows || 0}
+                  />
+                ),
+              },
             ]}
           />
         </div>
