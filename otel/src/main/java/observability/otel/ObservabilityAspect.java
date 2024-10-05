@@ -1,12 +1,7 @@
 package observability.otel;
 
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.api.metrics.Meter;
-import io.opentelemetry.api.trace.Span;
-import observability.otel.annotation.ObservabilityParam;
-import observability.otel.annotation.Param;
-import observability.otel.service.SpanAttributesService;
+import java.lang.reflect.Method;
+
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.After;
@@ -16,7 +11,13 @@ import org.aspectj.lang.annotation.Before;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.lang.reflect.Method;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.api.trace.Span;
+import observability.otel.annotation.ObservabilityParam;
+import observability.otel.annotation.Param;
+import observability.otel.service.SpanAttributesService;
 
 @Aspect
 @Component
@@ -26,6 +27,7 @@ public class ObservabilityAspect {
     private double cpuUsageFirstValue;
     private double networkTransferDataFirstValue;
     private final Metric metric = new Metric();
+
     @Autowired
     private SpanAttributesService spanAttributesService;
 
@@ -38,6 +40,7 @@ public class ObservabilityAspect {
     public Object logExecutionTime(ProceedingJoinPoint joinPoint, ObservabilityParam observabilityParam) throws Throwable {
         Param[] params = observabilityParam.params();
         Method methodName = spanAttributesService.getMethod(joinPoint);
+        Object proceed;
 
         for (Param param : params) {
             String key = param.key();
@@ -45,7 +48,7 @@ public class ObservabilityAspect {
             Span.current().setAttribute(AttributeKey.stringKey(key), value);
         }
 
-        Object proceed = joinPoint.proceed();
+        proceed = joinPoint.proceed();
 
         Span.current().setAttribute("serviceName", methodName.getName());
 
